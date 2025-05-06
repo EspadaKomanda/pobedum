@@ -15,7 +15,7 @@ db = pw.PostgresqlDatabase(
     database=POSTGRES_DB,
     user=POSTGRES_USER,
     password=POSTGRES_PASSWORD,
-    host="http://postgres",
+    host="postgres",
     port=5432
 )
 
