@@ -5,6 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from app.utils.filters.fastapi_healthcheck import FastAPIHealthCheckFilter
 from app import config
 from app import models
 from app import controllers
@@ -28,6 +29,7 @@ def main():
             logging.StreamHandler()  # Log to console
         ]
     )
+    logging.getLogger("uvicorn.access").addFilter(FastAPIHealthCheckFilter())
 
     app.add_middleware(
         CORSMiddleware,
