@@ -1,0 +1,11 @@
+fastapi[standard]
+fastapi-controllers
+minio
+passlib[bcrypt]
+peewee
+psycopg2-binary
+pydantic
+pyjwt
+python-dotenv
+redis[hiredis]
+uvicorn
