@@ -3,6 +3,7 @@ fastapi-controllers
 minio
 passlib[bcrypt]
 peewee
+pendulum
 psycopg2-binary
 pydantic
 pyjwt

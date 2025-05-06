@@ -6,10 +6,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from app import config
-# from app import models
+from app import models
 from app import controllers
 
-# models.create_database()
+models.create_database()
 
 app = FastAPI()
 app.title = "Espada - Backend API"
