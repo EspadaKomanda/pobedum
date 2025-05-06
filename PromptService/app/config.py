@@ -44,3 +44,8 @@ REDIS_PASSWORD=getenv("REDIS_PASSWORD")
 
 if REDIS_PASSWORD is None:
     raise SystemError("Redis password have not been configured.")
+
+# Kafka
+KAFKA_HOST=getenv("KAFKA_HOST") or "kafka"
+KAFKA_PORT=getenv("KAFKA_PORT") or "9092"
+KAFKA_BROKERS=getenv("KAFKA_BROKERS") or f"{KAFKA_HOST}:{KAFKA_PORT}"
