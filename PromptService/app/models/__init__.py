@@ -7,7 +7,7 @@ from .base import db
 
 logger = logging.getLogger(__name__)
 
-tables = [
+tables: list = [
     ]
 
 logger.debug("Connecting to databse...")

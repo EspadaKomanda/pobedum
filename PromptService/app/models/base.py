@@ -6,6 +6,8 @@ import pendulum as pnd
 import peewee as pw
 
 from app.config import (
+    POSTGRES_HOST,
+    POSTGRES_PORT,
     POSTGRES_DB,
     POSTGRES_USER,
     POSTGRES_PASSWORD
@@ -15,8 +17,8 @@ db = pw.PostgresqlDatabase(
     database=POSTGRES_DB,
     user=POSTGRES_USER,
     password=POSTGRES_PASSWORD,
-    host="postgres",
-    port=5432
+    host=POSTGRES_HOST,
+    port=POSTGRES_PORT
 )
 
 class Base(pw.Model):

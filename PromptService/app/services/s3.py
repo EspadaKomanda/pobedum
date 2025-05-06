@@ -7,6 +7,8 @@ from minio import Minio
 from minio.error import S3Error
 
 from app.config import (
+    MINIO_HOST,
+    MINIO_PORT,
     MINIO_ROOT_USER,
     MINIO_ROOT_PASSWORD
 )
@@ -14,7 +16,7 @@ from app.config import (
 logger = logging.getLogger(__name__)
 
 client = Minio(
-    endpoint="minio:9000",
+    endpoint=f"{MINIO_HOST}:{MINIO_PORT}",
     access_key=MINIO_ROOT_USER,
     secret_key=MINIO_ROOT_PASSWORD,
     secure=False
