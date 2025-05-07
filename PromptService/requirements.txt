@@ -2,6 +2,7 @@ fastapi[standard]
 fastapi-controllers
 confluent-kafka
 minio
+openai
 passlib[bcrypt]
 peewee
 pendulum
