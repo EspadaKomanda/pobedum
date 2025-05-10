@@ -13,7 +13,7 @@ class OpenAIService:
         client (OpenAI): An instance of the OpenAI client configured with the provided API key.
     """
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, mode: str):
         """
         Initializes the OpenAIService with the provided API key.
 
@@ -21,7 +21,11 @@ class OpenAIService:
             api_key (str): The OpenAI API key used for authentication.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.client = OpenAI(api_key=api_key)
+
+        if mode == "deepseek":
+            self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
+        elif mode == "openai":
+            self.client = OpenAI(api_key=api_key)
         self.logger.debug("OpenAI service initialized")
 
 
@@ -52,14 +56,19 @@ class OpenAIService:
             model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            stream=False
         )
 
         if not response.choices or not response.choices[0].message.content:
             self.logger.error("No content received in the response")
             raise APIException("No content received in the response")
 
-        return response.choices[0].message.content
+        response_text = response.choices[0].message.content
+
+        self.logger.debug("Generated completion: %s", response_text)
+
+        return response_text
 
     def generate_image(
         self,
