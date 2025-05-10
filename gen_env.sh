@@ -2,8 +2,12 @@
 
 # if .env exists, stop
 if [ -f ".env" ]; then
-  echo ".env already exists"
-  exit 1
+  echo ".env already exists, regenerate? (y/N)"
+  read answer
+  if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+    echo "User response negative, aborting"
+    exit 1
+  fi
 fi
 
 # if example.env does not exist, stop
@@ -14,5 +18,8 @@ fi
 
 # copy example.env to .env
 cp example.env .env
+
+echo "Config successfully generated from template."
+echo "Remember to edit .env before running docker-compose up"
 
 exit 0
