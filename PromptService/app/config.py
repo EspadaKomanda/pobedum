@@ -49,3 +49,21 @@ if REDIS_PASSWORD is None:
 KAFKA_HOST=getenv("KAFKA_HOST") or "kafka"
 KAFKA_PORT=getenv("KAFKA_PORT") or "9092"
 KAFKA_BROKERS=getenv("KAFKA_BROKERS") or f"{KAFKA_HOST}:{KAFKA_PORT}"
+
+# OpenAI credentials
+OPENAI_API_KEY=getenv("OPENAI_API_KEY")
+
+if OPENAI_API_KEY is None:
+    raise SystemError("OpenAI API key have not been configured.")
+
+# DeepSeek credentials
+DEEPSEEK_API_KEY=getenv("DEEPSEEK_API_KEY")
+
+if DEEPSEEK_API_KEY is None:
+    raise SystemError("DeepSeek API key have not been configured.")
+
+# Yandex Speechkit credentials
+YANDEX_SPEECHKIT_API_KEY=getenv("YANDEX_SPEECHKIT_API_KEY")
+
+if YANDEX_SPEECHKIT_API_KEY is None:
+    raise SystemError("Yandex Speechkit API key have not been configured.")
