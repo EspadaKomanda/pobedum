@@ -24,9 +24,14 @@ class OpenAIService:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
 
-        if mode == "deepseek":
+        if mode == "local":
+            # For using an autonomous model set up by Espada
+            self.client = OpenAI(api_key=api_key, base_url="http://localgpt/v1")
+        elif mode == "deepseek":
+            # For using the Deepseek service
             self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
         elif mode == "openai":
+            # For using the OpenAI service
 
             # Will only use HTTP_PROXY for OpenAI
             # since Deepseek works without proxy
