@@ -27,14 +27,27 @@ class S3Service:
     S3 service for managing files.
     """
     @classmethod
-    def upload(cls, bucket_name: str, destination: str, source: str):
+    def upload(
+        cls,
+        bucket_name: str,
+        destination: str,
+        source: str,
+        create_bucket_if_not_exists: bool = True
+    ):
         """
         Uploads a file to a bucket.
         """
         try:
-            if not client.bucket_exists(bucket_name):
-                logger.info("Bucket %s does not exist, creating...", bucket_name)
-                client.make_bucket(bucket_name)
+            if create_bucket_if_not_exists:
+                if not cls.bucket_exists(bucket_name):
+                    logger.info("Bucket %s does not exist, creating...", bucket_name)
+                    cls.create_bucket(bucket_name)
+            else:
+                if not cls.bucket_exists(bucket_name):
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Bucket {bucket_name} does not exist."
+                    )
 
             client.fput_object(bucket_name, destination, source)
             logger.info("File %s uploaded to bucket %s", source, bucket_name)
@@ -58,3 +71,20 @@ class S3Service:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=str(e)
             ) from e
+
+    @classmethod
+    def create_bucket(cls, bucket_name: str):
+        """
+        Creates a new bucket.
+        """
+        client.make_bucket(bucket_name)
+        logger.info("Bucket %s created successfully.", bucket_name)
+
+    @classmethod
+    def bucket_exists(cls, bucket_name: str) -> bool:
+        """
+        Checks if a bucket exists.
+        """
+        exists = client.bucket_exists(bucket_name)
+        logger.info("Bucket %s exists: %s", bucket_name, exists)
+        return exists

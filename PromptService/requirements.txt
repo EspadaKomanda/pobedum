@@ -13,3 +13,4 @@ pyjwt
 python-dotenv
 redis[hiredis]
 uvicorn
+yandex-speechkit

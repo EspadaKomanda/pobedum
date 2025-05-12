@@ -1,108 +1,72 @@
 """
-Yandex SpeechKit service with S3 integration using official SDK.
+A service class for integrating Yandex SpeechKit with S3 storage for audio files.
 """
 import logging
-import tempfile
-from speechkit import SpeechSynthesis
-from fastapi import HTTPException
+from tempfile import NamedTemporaryFile
+from typing import List
+
+from speechkit import model_repository, configure_credentials, creds
+from speechkit.stt import AudioProcessingType
+# from pydub import AudioSegment
+
 from app.services.s3 import S3Service
+from app.config import YANDEX_SPEECHKIT_API_KEY
 
-class YandexSpeechKitS3:
+logger = logging.getLogger(__name__)
+
+# Configure Yandex SpeechKit credentials using the API key from app.config
+if not YANDEX_SPEECHKIT_API_KEY:
+    raise ValueError("YANDEX_SPEECHKIT_API_KEY is not set in app.config")
+
+configure_credentials(
+    yandex_credentials=creds.YandexCredentials(api_key=YANDEX_SPEECHKIT_API_KEY)
+)
+
+class YandexSpeechKitService:
     """
-    Yandex SpeechKit service with S3 integration using official SDK.
+    A service class for integrating Yandex SpeechKit with S3 storage for audio files.
 
-    Attributes:
-        folder_id (str): Yandex Cloud folder ID
-        iam_token (str): Yandex Cloud IAM token
-        logger (logging.Logger): Configured logger instance
-        synth (SpeechSynthesis): SpeechKit synthesis client
+    This class provides methods to synthesize text to audio stored in S3,
+    leveraging Yandex SpeechKit's capabilities for speech-to-text and text-to-speech conversions.
     """
-
-    def __init__(self, folder_id: str, iam_token: str):
-        """
-        Initialize SpeechKit client with credentials.
-
-        Args:
-            folder_id (str): Yandex Cloud folder ID
-            iam_token (str): Yandex Cloud IAM token
-        """
-        self.folder_id = folder_id
-        self.iam_token = iam_token
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.addHandler(logging.NullHandler())
- 
-        # Initialize SpeechKit client
-        self.synth = SpeechSynthesis(iam_token=iam_token)
 
     def synthesize_to_s3(
-        self,
-        text: str,
-        voice: str,
-        bucket_name: str,
-        s3_object_key: str,
-        lang: str = "ru-RU",
-        audio_format: str = "oggopus",
-        speed: float = 1.0,
-        emotion: str = "neutral"
-    ) -> None:
+        self, text: str, s3_bucket: str, s3_key: str, voice: str = "john"
+    ) -> str:
         """
-        Synthesize speech and upload directly to S3 storage.
+        Synthesizes text to speech and uploads the resulting audio to an S3 bucket.
 
         Args:
-            text (str): Text to convert to speech
-            voice (str): Voice type (e.g., 'alena', 'filipp', 'john')
-            bucket_name (str): Target S3 bucket name
-            s3_object_key (str): Destination object key in S3
-            lang (str, optional): Language code. Defaults to 'ru-RU'
-            audio_format (str, optional): Audio format. Options: 'lpcm', 'oggopus', 'mp3'
-            speed (float, optional): Speech speed ratio. Defaults to 1.0
-            emotion (str, optional): Emotional tone. Options: 'neutral', 'good', 'evil'
+            text (str): The text to synthesize into speech.
+            s3_bucket (str): The name of the S3 bucket to upload the audio file.
+            s3_key (str): The key for the audio file in the S3 bucket.
+            voice (str, optional): The voice model to use for synthesis. Defaults to 'john'.
+
+        Returns:
+            str: The S3 path (s3://bucket/key) of the uploaded audio file.
 
         Raises:
-            ValueError: For invalid input parameters
-            RuntimeError: For SpeechKit synthesis failures
-            HTTPException: For S3 upload failures
+            HTTPException: If there is an error synthesizing the audio or uploading to S3.
         """
-        self.logger.info("Initiating speech synthesis for %s characters", len(text))
-        self.logger.debug("Voice: %s, Lang: %s, Format: %s", voice, lang, audio_format)
-
-        # Validate input parameters
-        if not text.strip():
-            error_msg = "Input text cannot be empty"
-            self.logger.error(error_msg)
-            raise ValueError(error_msg)
-
         try:
-            # Create temporary file for audio storage
-            with tempfile.NamedTemporaryFile(suffix=f".{audio_format}", delete=True) as temp_file:
-                # Perform speech synthesis
-                self.synth.synthesize_to_file(
-                    text=text,
-                    voice=voice,
-                    file_path=temp_file.name,
-                    format=audio_format,
-                    folder_id=self.folder_id,
-                    lang=lang,
-                    speed=speed,
-                    emotion=emotion
+            model = model_repository.synthesis_model()
+            model.voice = voice
+
+            audio_segment = model.synthesize(text, raw_format=False)
+            logger.info("Synthesized audio for text: %s", text)
+
+            with NamedTemporaryFile(suffix=".wav") as temp_audio:
+                audio_segment.export(temp_audio.name, format="wav")
+                logger.info("Exported audio to temporary file: %s", temp_audio.name)
+
+                S3Service.upload(s3_bucket, s3_key, temp_audio.name, True)
+                logger.info(
+                    "Uploaded synthesized audio to s3://%s/%s", s3_bucket, s3_key
                 )
 
-                self.logger.debug("Temporary audio file created: %s", temp_file.name)
-
-                # Upload to S3 using provided service
-                S3Service.upload(
-                    bucket_name=bucket_name,
-                    destination=s3_object_key,
-                    source=temp_file.name
-                )
-
-            self.logger.info("Successfully uploaded to s3://%s/%s", bucket_name, s3_object_key)
-
+                return f"s3://{s3_bucket}/{s3_key}"
         except Exception as e:
-            error_msg = f"Synthesis/S3 upload failed: {str(e)}"
-            self.logger.error(error_msg)
-
-            # Convert library exceptions to appropriate error types
-            if isinstance(e, HTTPException):
-                raise
-            raise RuntimeError(error_msg) from e
+            logger.error(
+                "Failed to synthesize text and upload to S3: %s", e, exc_info=True
+            )
+            raise
