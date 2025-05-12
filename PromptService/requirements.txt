@@ -1,6 +1,7 @@
+confluent-kafka
 fastapi[standard]
 fastapi-controllers
-confluent-kafka
+httpx
 minio
 openai
 passlib[bcrypt]

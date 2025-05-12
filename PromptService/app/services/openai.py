@@ -1,7 +1,7 @@
 """Service for interaction with OpenAI's API for ChatGPT."""
-import httpx
 import logging
 from typing import List, Literal
+import httpx
 from openai import OpenAI
 from app.exceptions.openai import APIException
 from app.config import ENV_PROXY
@@ -88,7 +88,7 @@ class OpenAIService:
         self,
         prompt: str,
         n: int = 1,
-        size: Literal["256x256", "512x512", "1024x1024",
+        size: Literal["1024x1024",
                       "1024x1792", "1792x1024"] = "1024x1024",
         quality: Literal["standard", "hd"] = "standard"
     ) -> List[str]:
@@ -120,4 +120,8 @@ class OpenAIService:
             quality=quality
         )
 
-        return [image.url for image in response.data if image.url]
+        image_urls = [image.url for image in response.data if image.url]
+
+        self.logger.debug("Generated images: %s", image_urls)
+
+        return image_urls
