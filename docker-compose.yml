@@ -56,8 +56,17 @@ services:
     networks:
       - app-network
 
+  shadowsocks:
+    image: ghcr.io/shadowsocks/sslocal-rust:latest
+    volumes:
+      - ./shadowsocks.json:/etc/shadowsocks-rust/config.json
+    networks:
+      - app-network
+
   prompt-service:
     build: ./PromptService/
+    depends_on:
+      - "shadowsocks"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8000/healthcheck"]
       interval: 30s
@@ -73,6 +82,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - YANDEX_SPEECHKIT_API_KEY=${YANDEX_SPEECHKIT_API_KEY}
+      - ENV_PROXY=${ENV_PROXY}
     networks:
       - app-network
 

@@ -1,8 +1,10 @@
 """Service for interaction with OpenAI's API for ChatGPT."""
+import httpx
 import logging
 from typing import List, Literal
 from openai import OpenAI
 from app.exceptions.openai import APIException
+from app.config import ENV_PROXY
 
 class OpenAIService:
     """
@@ -25,7 +27,19 @@ class OpenAIService:
         if mode == "deepseek":
             self.client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
         elif mode == "openai":
-            self.client = OpenAI(api_key=api_key)
+
+            # Will only use HTTP_PROXY for OpenAI
+            # since Deepseek works without proxy
+            if ENV_PROXY is not None:
+                self.client = OpenAI(
+                    api_key=api_key,
+                    http_client=httpx.Client(proxy=ENV_PROXY)
+                )
+            else:
+                self.client = OpenAI(
+                    api_key=api_key
+                )
+
         self.logger.debug("OpenAI service initialized")
 
 

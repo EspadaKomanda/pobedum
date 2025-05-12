@@ -67,3 +67,5 @@ YANDEX_SPEECHKIT_API_KEY=getenv("YANDEX_SPEECHKIT_API_KEY")
 
 if YANDEX_SPEECHKIT_API_KEY is None:
     raise SystemError("Yandex Speechkit API key have not been configured.")
+
+ENV_PROXY=getenv("ENV_PROXY") or None
