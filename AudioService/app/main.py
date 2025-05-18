@@ -16,13 +16,9 @@ models.create_database()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan manager for FastAPI app to handle PromptService lifecycle."""
-    # Initialize and start the PromptService
-    audio_service = AudioService(
-    )
+    audio_service = AudioService(kafka_bootstrap_servers=config.KAFKA_BROKERS)
     audio_service.start()
     yield
-    # Shutdown the PromptService gracefully
     audio_service.shutdown()
 
 def main():
