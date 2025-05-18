@@ -22,15 +22,6 @@ def main():
     Entrypoint function
     """
 
-    # Example usage in another module
-    from app.services.kafkatest import test_kafka_connectivity
-
-    if test_kafka_connectivity():
-        print("Kafka connectivity test succeeded!")
-        raise RecursionError("Hell yeah, man!")
-    else:
-        raise SystemError("Kafka committed deathpacito!")
-
     # Logging setup
     logging.basicConfig(
         level=logging.DEBUG if config.ENVIRONMENT_TYPE == "development" else logging.INFO,
