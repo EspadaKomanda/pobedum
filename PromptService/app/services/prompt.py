@@ -70,7 +70,8 @@ class PromptService:
         """
         generation_instruction = (
             "Split the story into paragraphs. For each, provide 'text' for audio and 'photo_prompt' for image generation. "
-            "Respond with a JSON array of objects. Example: [{'text': '...', 'photo_prompt': '...'}]\n\n"
+            "Also provide the voice (male of female) which should be used to voice the paragraph in field 'voice'. "
+                "Respond with a JSON array of objects. Example: [{'text': '...', 'photo_prompt': '...', 'voice': 'male'}]\n\n"
             f"Story: {source_prompt}"
         )
         
@@ -87,7 +88,7 @@ class PromptService:
             if not isinstance(paragraphs, list):
                 raise ValueError("Expected a JSON array")
             for item in paragraphs:
-                if 'text' not in item or 'photo_prompt' not in item:
+                if 'text' not in item or 'photo_prompt' not in item or 'voice' not in item:
                     raise ValueError("Missing required fields in JSON item")
             
             # Save JSON to temporary file and upload to S3
@@ -164,7 +165,7 @@ class PromptService:
                 "pipeline_responses",
                 {
                     "pipeline_guid": pipeline_guid,
-                    "status": "processing_started"
+                    "status": "prompt_started"
                 }
             )
             
@@ -176,7 +177,7 @@ class PromptService:
                 "pipeline_responses",
                 {
                     "pipeline_guid": pipeline_guid,
-                    "status": "error",
+                    "status": "prompt_error",
                     "reason": str(e)
                 }
             )
