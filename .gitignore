@@ -656,3 +656,4 @@ postgres_data/
 minio_data/
 redis_data/
 !nginx/default.conf
+shadowsocks.json
