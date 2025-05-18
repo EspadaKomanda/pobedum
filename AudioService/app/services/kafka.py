@@ -110,8 +110,8 @@ class KafkaConsumerClient:
             'auto.offset.reset': 'earliest',
             'enable.auto.commit': False,
             'message.send.max.retries': 10,
-            'retry.backoff.ms': 10000
-
+            'retry.backoff.ms': 10000,
+            'max.poll.interval.ms': 60000,
         }
         conf.update(configs)
         self.consumer = Consumer(conf)
@@ -232,7 +232,10 @@ class ThreadedKafkaConsumer(threading.Thread):
             'bootstrap.servers': bootstrap_servers,
             'group.id': group_id,
             'auto.offset.reset': 'earliest',
-            'enable.auto.commit': False
+            'enable.auto.commit': False,
+            'max.poll.interval.ms': 60000,
+            'message.send.max.retries': 3,
+            'retry.backoff.ms': 10000
         }
         conf.update(configs)
 
@@ -256,7 +259,7 @@ class ThreadedKafkaConsumer(threading.Thread):
 
                 if msg.error():
 
-                    if msg.error().code() == KafkaError.ERR__PARTITION_EOF:
+                    if msg.error().code() == KafkaError._PARTITION_EOF:
                         self.logger.debug("Reached end of partition %s", msg.partition())
                         continue
                     if self.error_callback:
