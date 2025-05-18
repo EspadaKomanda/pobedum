@@ -657,3 +657,4 @@ minio_data/
 redis_data/
 !nginx/default.conf
 shadowsocks.json
+.mypy_cache
