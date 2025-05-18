@@ -33,7 +33,7 @@ class KafkaProducerClient:
         conf = {
             'bootstrap.servers': bootstrap_servers,
             'message.send.max.retries': 3,
-            'retry.backoff.ms': 1000
+            'retry.backoff.ms': 10000
         }
         conf.update(configs)
         self.producer = Producer(conf)
