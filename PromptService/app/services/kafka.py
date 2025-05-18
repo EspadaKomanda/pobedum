@@ -108,7 +108,10 @@ class KafkaConsumerClient:
             'bootstrap.servers': bootstrap_servers,
             'group.id': group_id,
             'auto.offset.reset': 'earliest',
-            'enable.auto.commit': False
+            'enable.auto.commit': False,
+            'message.send.max.retries': 10,
+            'retry.backoff.ms': 10000
+
         }
         conf.update(configs)
         self.consumer = Consumer(conf)
@@ -232,6 +235,8 @@ class ThreadedKafkaConsumer(threading.Thread):
             'enable.auto.commit': False
         }
         conf.update(configs)
+
+        self.logger.debug("Initializing with config: %s", conf)
 
         self.consumer = Consumer(conf)
         self.topics = topics

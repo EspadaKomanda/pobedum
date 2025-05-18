@@ -2,6 +2,7 @@
 This module serves as the entry point for the backend application.
 """
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -9,13 +10,21 @@ from app.utils.filters.fastapi_healthcheck import FastAPIHealthCheckFilter
 from app import config
 from app import models
 from app import controllers
+from app.services.prompt import PromptService
 
 models.create_database()
 
-app = FastAPI()
-app.title = "Espada - Backend API"
-app.summary = "Backend API for 'Kod Pobedi'"
-app.contact = {"name": "Github", "url": "https://github.com/EspadaKomanda/pobedum"}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan manager for FastAPI app to handle PromptService lifecycle."""
+    # Initialize and start the PromptService
+    prompt_service = PromptService(
+        kafka_bootstrap_servers=config.KAFKA_BROKERS
+    )
+    prompt_service.start()
+    yield
+    # Shutdown the PromptService gracefully
+    prompt_service.shutdown()
 
 def main():
     """
@@ -31,6 +40,11 @@ def main():
         ]
     )
     logging.getLogger("uvicorn.access").addFilter(FastAPIHealthCheckFilter())
+
+    app = FastAPI(lifespan=lifespan)
+    app.title = "Espada - Backend API"
+    app.summary = "Backend API for 'Kod Pobedi'"
+    app.contact = {"name": "Github", "url": "https://github.com/EspadaKomanda/pobedum"}
 
     app.add_middleware(
         CORSMiddleware,
