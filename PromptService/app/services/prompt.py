@@ -27,13 +27,14 @@ class PromptService:
         self.openai_service = OpenAIService(api_key=DEEPSEEK_API_KEY, mode="deepseek")
         
         self.consumer = ThreadedKafkaConsumer(
-            topics='generation_requests',
+            topics=['generation_requests'],
             group_id='prompt-service',
             bootstrap_servers=kafka_bootstrap_servers,
-            callback=self.process_message
+            message_callback=self.process_message
         )
         
         self.producer = KafkaProducerClient(bootstrap_servers=kafka_bootstrap_servers)
+        logger.info("Initiated the PromptService")
 
     def _moderate_prompt(self, prompt: str) -> bool:
         """
