@@ -21,6 +21,7 @@ def main():
     """
     Entrypoint function
     """
+
     # Logging setup
     logging.basicConfig(
         level=logging.DEBUG if config.ENVIRONMENT_TYPE == "development" else logging.INFO,

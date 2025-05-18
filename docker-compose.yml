@@ -47,6 +47,7 @@ services:
       ZOOKEEPER_SERVERS: zoo:2888:3888
     networks:
       - app-network
+
   kafka:
     image: confluentinc/cp-kafka:latest
     hostname: kafka
@@ -61,7 +62,6 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: "zoo:2181"
       KAFKA_BROKER_ID: 1
-      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -69,10 +69,18 @@ services:
       KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_LOG4J_LOGGERS: "kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "WARN"
+      KAFKA_LOG4J_TOOLS_LOGLEVEL: "ERROR"
     networks:
       - app-network
     depends_on:
       - zoo
+    healthcheck:
+      test: kafka-topics --bootstrap-server broker:9092 --list
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     image: nginx:latest
@@ -93,7 +101,8 @@ services:
   prompt-service:
     build: ./PromptService/
     depends_on:
-      - "shadowsocks"
+      - shadowsocks
+      - kafka
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8000/healthcheck"]
       interval: 30s
