@@ -2,25 +2,35 @@
 Service containing media-related functions
 """
 import os
-import io
 import uuid
-
+import tempfile
+import logging
+import json
+from typing import Dict, Any
+import redis
+from redis import Redis
 import cv2
+
 import numpy as np
-import torch
-from PIL import Image, ImageDraw, ImageFont
-from gtts import gTTS
-from pydub import AudioSegment
 from moviepy.editor import (
     VideoClip,
     CompositeVideoClip,
-    ImageClip,
     VideoFileClip,
     concatenate_videoclips,
     AudioFileClip,
 )
 from moviepy.video.fx.all import fadein, fadeout
-from diffusers import DiffusionPipeline
+
+from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
+from app.services.s3 import S3Service
+from app.config import (
+    KAFKA_BROKERS,
+    REDIS_HOST,
+    REDIS_PORT,
+    REDIS_DB
+)
+
+logger = logging.getLogger(__name__)
 
 class MergeService:
     """
@@ -28,7 +38,31 @@ class MergeService:
     to created animated videos.
     """
 
-    def _generate_zoom_frames(image, duration, size, zoom_start=1.0, zoom_end=1.5, fps=30):
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.redis = Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=REDIS_DB,
+            decode_responses=True
+        )
+        
+        # Initialize Kafka consumer
+        self.consumer = ThreadedKafkaConsumer(
+            bootstrap_servers=KAFKA_BROKERS,
+            group_id='merge-service',
+            topics=['merge_requests'],
+            message_callback=self.process_message
+        )
+        
+        # Initialize Kafka producer
+        self.producer = KafkaProducerClient(
+            bootstrap_servers=KAFKA_BROKERS,
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+
+
+    def _generate_zoom_frames(self, image, duration, size, zoom_start=1.0, zoom_end=1.5, fps=30):
         frames = []
 
         for t in np.linspace(0, duration, int(duration * fps)):
@@ -42,7 +76,7 @@ class MergeService:
 
         return frames
 
-    def _combine_videos2(video_paths, output_path="combined_video.mp4", enableFading = False, fadingType = None):
+    def _combine_videos2(self, video_paths, output_path="combined_video.mp4", enableFading = False, fadingType = None):
         clips = []
 
         # Загружаем все видео
@@ -51,7 +85,7 @@ class MergeService:
             clips.append(clip)
 
         # Склеиваем видео (можно изменить метод на "compose" для других эффектов)
-        final_clip = concatenate_videoclips(clips, method="compose")
+        final_clip = self._concatenate_videoclips(clips, method="compose")
 
         # Сохраняем результат
         final_clip.write_videofile(
@@ -68,7 +102,7 @@ class MergeService:
 
         return output_path
 
-    def _create_transition3(clip1, clip2, transition_duration=1.0,):
+    def _create_transition3(self, clip1, clip2, transition_duration=1.0,):
         """Создаем плавный переход между клипами"""
         # Делаем fadeout для первого клипа и fadein для второго
         clip1_fading = clip1.subclip(clip1.duration - transition_duration).fx(fadeout, transition_duration)
@@ -78,7 +112,7 @@ class MergeService:
         transition = concatenate_videoclips([clip1_fading, clip2_fading])
         return transition
 
-    def _combine_videos3(video_paths, output_path, transition_duration=1.0, enableFading = False, fadingType = None):
+    def _combine_videos3(self, video_paths, output_path, transition_duration=1.0, enableFading = False, fadingType = None):
         """Склеиваем видео с переходами без дублирования"""
         clips = [VideoFileClip(path) for path in video_paths]
 
@@ -91,7 +125,7 @@ class MergeService:
         # Добавляем переходы и остальные клипы
         for i in range(1, len(clips)):
             # Создаем переход между текущим и следующим клипом
-            transition = create_transition(clips[i-1], clips[i], transition_duration)
+            transition = self._create_transition(clips[i-1], clips[i], transition_duration)
             final_clips.append(transition)
 
             # Добавляем основной контент следующего клипа (без перехода)
@@ -195,7 +229,7 @@ class MergeService:
 
         return clip.fl(effect)
 
-    def _create_transition(clip1, clip2, transition_type='fade', transition_duration=1.0):
+    def _create_transition(self, clip1, clip2, transition_type='fade', transition_duration=1.0):
         """Создание перехода между клипами"""
         if transition_type == 'fade':
             return concatenate_videoclips([
@@ -205,8 +239,8 @@ class MergeService:
 
         elif transition_type == 'slide':
             return CompositeVideoClip([
-                slide_out(clip1, transition_duration, 'left'),
-                slide_in(clip2, transition_duration, 'right')
+                self._slide_out(clip1, transition_duration, 'left'),
+                self._slide_in(clip2, transition_duration, 'right')
             ])
 
         elif transition_type == 'zoom':
@@ -222,13 +256,13 @@ class MergeService:
         elif transition_type in ['crossfade', 'dissolve']:
             return CompositeVideoClip([
                 clip1.set_end(transition_duration),
-                clip2.set_start(0).fx(crossfadein, transition_duration)
+                clip2.set_start(0).fx(self._crossfadein, transition_duration)
             ])
 
         else:  # простой переход без эффектов
             return concatenate_videoclips([clip1, clip2])
 
-    def _combine_videos(video_paths, output_path, transition_type='fade', transition_duration=1.0):
+    def _combine_videos(self, video_paths, output_path, transition_type='fade', transition_duration=1.0):
         """Основная функция для склейки видео с переходами"""
         if not video_paths:
             raise ValueError("Список видео пуст")
@@ -257,7 +291,7 @@ class MergeService:
             )
 
             # Создаем переход
-            transition = create_transition(
+            transition = self._create_transition(
                 prev_clip_part,
                 next_clip_part,
                 transition_type,
@@ -293,7 +327,7 @@ class MergeService:
 
         return output_path
 
-    def _process_video_generation(prompts, display_texts, speech_texts, fps = 30, frameTime = 5.0, enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center'):
+    def _process_video_generation(self, prompts, display_texts, speech_texts, fps = 30, frameTime = 5.0, enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center'):
         # Получение параметров
         result_path = f"{uuid.uuid4()}.mp4"
 
@@ -310,13 +344,13 @@ class MergeService:
         if (enableAudio):
             for speech_text in speech_texts:
                 filename = f"{uuid.uuid4()}.mp3"
-                audio_path, audio_duration = text_to_speech(speech_text, filename=filename)
+                audio_path, audio_duration = self._text_to_speech(speech_text, filename=filename)
                 audio_paths.append(audio_path)
                 audio_durations.append(audio_duration)
         else:
             for i in range(len(images)):
                 filename = f"{uuid.uuid4()}.mp3"
-                create_silent_audio(filename, duration=frameTime)
+                self._create_silent_audio(filename, duration=frameTime)
                 audio_paths.append(filename)
                 audio_durations.append(frameTime)
 
@@ -333,7 +367,7 @@ class MergeService:
             zoom_end = 1.0 if flag else 1.5
 
             # 3. Генерируем кадры с учетом длительности аудио
-            frames = generate_zoom_frames(img, audio_durations[i], (width, height), zoom_start, zoom_end, fps)
+            frames = self._generate_zoom_frames(img, audio_durations[i], (width, height), zoom_start, zoom_end, fps)
 
             # 4. Создаем видеоклип
             def make_frame(t):
@@ -345,7 +379,7 @@ class MergeService:
 
             # 5. Создаем текстовый слой
             if (enableSubTitles):
-                text_clip = create_text_overlay_bottom(
+                text_clip = self._create_text_overlay_bottom(
                     display_texts[i],
                     duration=audio_durations[i],
                     size=(width, height),
@@ -385,11 +419,117 @@ class MergeService:
         for i, f in enumerate(video_files, 1):
             print(f"{i}. {f}")
 
-        output = combine_videos(video_files, result_path, fadingType, 1.0)
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=True) as temp_file:
 
-        print("\nВидео успешно склеены! Скачиваем результат...")
-        files.download(output)
+            # Get the name of the temporary file
+            temp_file_name = temp_file.name
+            
+            # Call your function to combine videos and save the output to the temporary file
+            output_file_path = self._combine_videos(video_files, temp_file_name, fadingType, 1.0)
 
         # Удаляем временные файлы
         for f in video_files:
             os.remove(f)
+
+        return output_file_path
+
+
+    def _get_asset_status(self, pipeline_guid: str) -> Dict[str, bool]:
+        """Get completion status for both asset types from Redis."""
+        return {
+            'audio': self.redis.exists(f"{pipeline_guid}:audio"),
+            'photos': self.redis.exists(f"{pipeline_guid}:photos")
+        }
+
+    def _handle_completion(self, pipeline_guid: str, video_guid: str):
+        """Trigger video generation when both assets are ready."""
+        try:
+            # Download structure file
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                S3Service.download(
+                    bucket_name=pipeline_guid,
+                    source="structure.json",
+                    destination=temp_file.name
+                )
+                with open(temp_file.name, 'r', encoding='utf-8') as f:
+                    structure = json.load(f)
+                
+                prompts = [p['photo_prompt'] for p in structure]
+                texts = [p['text'] for p in structure]
+
+            # Generate final video
+            output_path = f"{video_guid}.mp4"
+            self._process_video_generation(
+                prompts=prompts,
+                display_texts=texts,
+                speech_texts=texts,
+                enableAudio=True,
+                enableSubTitles=True
+            )
+
+            # Upload to S3
+            S3Service.upload(
+                bucket_name=pipeline_guid,
+                destination=output_path,
+                source=output_path
+            )
+
+            # Notify pipeline
+            self.producer.send_message(
+                topic="pipeline_responses",
+                value={
+                    "pipeline_guid": pipeline_guid,
+                    "status": "video_completed",
+                    "video_guid": video_guid
+                }
+            )
+
+            # Cleanup
+            self.redis.delete(f"{pipeline_guid}:audio")
+            self.redis.delete(f"{pipeline_guid}:photos")
+
+        except Exception as e:
+            self.logger.error("Video generation failed: %s", e)
+            self.producer.send_message(
+                topic="pipeline_responses",
+                value={
+                    "pipeline_guid": pipeline_guid,
+                    "status": "error",
+                    "reason": str(e)
+                }
+            )
+
+    def process_message(self, message: Dict[str, Any], _):
+        """Process incoming merge requests."""
+        try:
+            pipeline_guid = message['pipeline_guid']
+            video_guid = message['video_guid']
+
+            if not message['status'] in ['audio_finished', 'photos_finished']:
+                return
+
+            status_type = 'audio' if message['status'] == 'audio_finished' else 'photos'
+
+            # Update completion status
+            self.redis.set(f"{pipeline_guid}:{status_type}", "completed")
+            
+            # Check if both assets are ready
+            if all(self._get_asset_status(pipeline_guid).values()):
+                self.logger.info("Starting video merge for %s", pipeline_guid)
+                self._handle_completion(pipeline_guid, video_guid)
+
+        except KeyError as e:
+            self.logger.error("Invalid message format: %s", e)
+        except Exception as e:
+            self.logger.error("Message processing failed: %s", e)
+
+    def start(self):
+        """Start the Kafka consumer thread."""
+        self.consumer.start()
+        self.logger.info("MergeService started")
+
+    def shutdown(self):
+        """Gracefully shutdown the service."""
+        self.consumer.stop()
+        self.producer.flush()
+        self.logger.info("MergeService stopped")

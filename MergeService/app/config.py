@@ -41,6 +41,7 @@ if (POSTGRES_DB is None or
 REDIS_HOST=getenv("REDIS_HOST") or "redis"
 REDIS_PORT=getenv("REDIS_PORT") or "6379"
 REDIS_PASSWORD=getenv("REDIS_PASSWORD")
+REDIS_DB=getenv("REDIS_DB") or "0"
 
 if REDIS_PASSWORD is None:
     raise SystemError("Redis password have not been configured.")
