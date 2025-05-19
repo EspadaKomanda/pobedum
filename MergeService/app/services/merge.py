@@ -7,7 +7,6 @@ import tempfile
 import logging
 import json
 from typing import Dict, Any
-import redis
 from redis import Redis
 import cv2
 

@@ -3,7 +3,7 @@ fastapi[standard]
 fastapi-controllers
 gtts 
 minio
-moviepy 
+moviepy==1.0.3 
 numpy
 opencv-python 
 passlib[bcrypt]
