@@ -28,7 +28,7 @@ class MergeService:
     to created animated videos.
     """
 
-    def generate_zoom_frames(image, duration, size, zoom_start=1.0, zoom_end=1.5, fps=30):
+    def _generate_zoom_frames(image, duration, size, zoom_start=1.0, zoom_end=1.5, fps=30):
         frames = []
 
         for t in np.linspace(0, duration, int(duration * fps)):
@@ -42,7 +42,7 @@ class MergeService:
 
         return frames
 
-    def combine_videos2(video_paths, output_path="combined_video.mp4", enableFading = False, fadingType = None):
+    def _combine_videos2(video_paths, output_path="combined_video.mp4", enableFading = False, fadingType = None):
         clips = []
 
         # Загружаем все видео
@@ -68,7 +68,7 @@ class MergeService:
 
         return output_path
 
-    def create_transition3(clip1, clip2, transition_duration=1.0,):
+    def _create_transition3(clip1, clip2, transition_duration=1.0,):
         """Создаем плавный переход между клипами"""
         # Делаем fadeout для первого клипа и fadein для второго
         clip1_fading = clip1.subclip(clip1.duration - transition_duration).fx(fadeout, transition_duration)
@@ -78,7 +78,7 @@ class MergeService:
         transition = concatenate_videoclips([clip1_fading, clip2_fading])
         return transition
 
-    def combine_videos3(video_paths, output_path, transition_duration=1.0, enableFading = False, fadingType = None):
+    def _combine_videos3(video_paths, output_path, transition_duration=1.0, enableFading = False, fadingType = None):
         """Склеиваем видео с переходами без дублирования"""
         clips = [VideoFileClip(path) for path in video_paths]
 
@@ -120,7 +120,7 @@ class MergeService:
 
         return output_path
 
-    def crossfadein(clip, duration):
+    def _crossfadein(clip, duration):
         """Реализация crossfadein эффекта"""
         def effect(get_frame, t):
             if t >= duration:
@@ -133,7 +133,7 @@ class MergeService:
 
         return clip.fl(effect)
 
-    def crossfadeout(clip, duration):
+    def _crossfadeout(clip, duration):
         """Реализация crossfadeout эффекта"""
         def effect(get_frame, t):
             if t <= clip.duration - duration:
@@ -146,7 +146,7 @@ class MergeService:
 
         return clip.fl(effect)
 
-    def slide_in(clip, duration, direction='right'):
+    def _slide_in(clip, duration, direction='right'):
         """Реализация slide-in эффекта"""
         def effect(get_frame, t):
             if t >= duration:
@@ -170,7 +170,7 @@ class MergeService:
 
         return clip.fl(effect)
 
-    def slide_out(clip, duration, direction='left'):
+    def _slide_out(clip, duration, direction='left'):
         """Реализация slide-out эффекта"""
         def effect(get_frame, t):
             if t <= clip.duration - duration:
@@ -195,7 +195,7 @@ class MergeService:
 
         return clip.fl(effect)
 
-    def create_transition(clip1, clip2, transition_type='fade', transition_duration=1.0):
+    def _create_transition(clip1, clip2, transition_type='fade', transition_duration=1.0):
         """Создание перехода между клипами"""
         if transition_type == 'fade':
             return concatenate_videoclips([
@@ -228,7 +228,7 @@ class MergeService:
         else:  # простой переход без эффектов
             return concatenate_videoclips([clip1, clip2])
 
-    def combine_videos(video_paths, output_path, transition_type='fade', transition_duration=1.0):
+    def _combine_videos(video_paths, output_path, transition_type='fade', transition_duration=1.0):
         """Основная функция для склейки видео с переходами"""
         if not video_paths:
             raise ValueError("Список видео пуст")
@@ -293,7 +293,7 @@ class MergeService:
 
         return output_path
 
-    def start(prompts, display_texts, speech_texts, fps = 30, frameTime = 5.0, enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center'):
+    def _process_video_generation(prompts, display_texts, speech_texts, fps = 30, frameTime = 5.0, enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center'):
         # Получение параметров
         result_path = f"{uuid.uuid4()}.mp4"
 

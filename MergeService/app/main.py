@@ -18,13 +18,13 @@ models.create_database()
 async def lifespan(app: FastAPI):
     """Lifespan manager for FastAPI app to handle MergeService lifecycle."""
     # Initialize and start the MergeService
-    prompt_service = MergeService(
+    merge_service = MergeService(
         kafka_bootstrap_servers=config.KAFKA_BROKERS
     )
-    prompt_service.start()
+    merge_service._start()
     yield
     # Shutdown the MergeService gracefully
-    prompt_service.shutdown()
+    merge_service.shutdown()
 
 def main():
     """
