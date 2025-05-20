@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ApiGatewayService.Communicators;
 using ApiGatewayService.Models.BasicResponses;
 using ApiGatewayService.Models.Microservices.Internal;
@@ -58,8 +59,8 @@ public class LetterController : ControllerBase
     {
         try
         {
-            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId").Value);
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == "userRole").Value;
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultNameClaimType).Value);
+            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultRoleClaimType).Value;
             return Ok(await _lettersCommunicator.SendGetLetterRequest(userId, userRole, id));
         }
         catch (Exception e)
@@ -72,13 +73,14 @@ public class LetterController : ControllerBase
             });
         }
     }
+    
     [HttpPost]
     public async Task<IActionResult> CreateLetter([FromBody] LetterCreateRequest request)
     {
         try
         {
-            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId").Value);
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == "userRole").Value;
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultNameClaimType).Value);
+            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultRoleClaimType).Value;
             return Ok(await _lettersCommunicator.SendCreateLetterRequest(userId, userRole, new CreateLetterRequest()
             {
                 
@@ -105,8 +107,8 @@ public class LetterController : ControllerBase
     {
         try
         {
-            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId").Value);
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == "userRole").Value;
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultNameClaimType).Value);
+            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultRoleClaimType).Value;
             return Ok(await _lettersCommunicator.SendAddLetterToFavouritesRequest(new AddLetterToFavouritesRequest()
             {
                 User = new User()
@@ -128,8 +130,8 @@ public class LetterController : ControllerBase
     {
         try
         {
-            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId").Value);
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == "userRole").Value;
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultNameClaimType).Value);
+            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultRoleClaimType).Value;
             return Ok(await _lettersCommunicator.SendRemoveLetterToFavouritesRequest(new RemoveLetterFromFavouritesRequest()
             {
                 User = new User()
