@@ -4,6 +4,7 @@ using ApiGatewayService.Communicators;
 using ApiGatewayService.Exceptions.HttpClient;
 using ApiGatewayService.Utils;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
 namespace ApiGatewayService.Handlers;
