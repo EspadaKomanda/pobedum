@@ -8,5 +8,6 @@ public class LetterDTO
     public bool IsOwned { get; set; }
     public required string Resource { get; set; }
     public bool IsFavourite { get; set; }
+    public required string Date { get; set; }
     public bool IsLong { get; set; }
 }

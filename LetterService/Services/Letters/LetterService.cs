@@ -41,6 +41,7 @@ public class LetterService : ILetterService
                 Title = createLetterRequest.Title,
                 Content = createLetterRequest.Content,
                 Resource = createLetterRequest.Resource,
+                Date = createLetterRequest.Date,
                 AuthorId = createLetterRequest.Author.Id,
                 IsLong = createLetterRequest.Content.Length > 1000
             };
@@ -55,6 +56,7 @@ public class LetterService : ILetterService
                     Title = entityEntry.Entity.Resource,
                     Content = entityEntry.Entity.Content,
                     Id = entityEntry.Entity.Id,
+                    Date = entityEntry.Entity.Date,
                     IsOwned = createLetterRequest.Author.Id == entityEntry.Entity.AuthorId,
                     IsLong = entityEntry.Entity.IsLong,
                     IsFavourite =
@@ -86,6 +88,7 @@ public class LetterService : ILetterService
                 Content = letter.Content,
                 Id = letter.Id,
                 IsLong = letter.IsLong,
+                Date = letter.Date,
                 IsFavourite = await _favouritesService.IsFavourite(user,letterId),
                 IsOwned = letter.AuthorId == user.Id
             };
@@ -112,7 +115,8 @@ public class LetterService : ILetterService
                 Id = letter.Id,
                 IsLong = letter.IsLong,
                 IsFavourite = false,
-                IsOwned = false
+                IsOwned = false,
+                Date = letter.Date
             };
         }
         catch (Exception e)
@@ -140,6 +144,7 @@ public class LetterService : ILetterService
             Content = letter.Content,
             Id = letter.Id,
             IsLong = letter.IsLong,
+            Date = letter.Date,
             IsFavourite =  _favouritesService.IsFavourite(user, letter.Id).Result,
             IsOwned = letter.AuthorId == user.Id
         }).ToList();
@@ -167,6 +172,7 @@ public class LetterService : ILetterService
             Id = letter.Id,
             IsLong = letter.IsLong,
             IsFavourite = false,
+            Date = letter.Date,
             IsOwned = false
         }).ToList();
         

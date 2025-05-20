@@ -10,5 +10,6 @@ public class Letter
     public required string Title { get; set; }
     public string? Content { get; set; }
     public Guid AuthorId { get; set; }
+    public required string Date { get; set; }
     public required string Resource { get; set; }
 }

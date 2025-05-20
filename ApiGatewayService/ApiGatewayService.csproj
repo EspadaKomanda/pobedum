@@ -27,7 +27,6 @@
 
     <ItemGroup>
       <Folder Include="Models\Microservices\AuthService\Responses\" />
-      <Folder Include="Models\Requests\" />
     </ItemGroup>
 
 </Project>
