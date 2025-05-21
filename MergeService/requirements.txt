@@ -17,3 +17,4 @@ pyjwt
 python-dotenv
 redis[hiredis]
 uvicorn
+wave

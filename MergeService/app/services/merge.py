@@ -19,7 +19,7 @@ from moviepy.editor import (
     AudioFileClip,
 )
 from moviepy.video.fx.all import fadein, fadeout
-
+import wave
 from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
 from app.services.s3 import S3Service
 from app.config import (
@@ -326,26 +326,21 @@ class MergeService:
 
         return output_path
 
-    def _process_video_generation(self, prompts, display_texts, speech_texts, fps = 30, frameTime = 5.0, enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center'):
-        # Получение параметров
-        result_path = f"{uuid.uuid4()}.mp4"
-
-        images = []
-        # Генерация
-        # for p in prompts:
-        #    images.append(generateImage(p))
-        for p in prompts:
-            images.append(p)
+    def _process_video_generation(self,
+        images, display_texts, audio_paths, speech_texts, fps = 30, frameTime = 5.0,
+        enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center'):
+        """Processes the video generation"""
 
         # Аудио
-        audio_paths = []
         audio_durations = []
+
         if (enableAudio):
-            for speech_text in speech_texts:
-                filename = f"{uuid.uuid4()}.mp3"
-                audio_path, audio_duration = self._text_to_speech(speech_text, filename=filename)
-                audio_paths.append(audio_path)
-                audio_durations.append(audio_duration)
+            for file_path in audio_paths:
+                with wave.open(file_path, 'r') as wav_file:
+                    frames = wav_file.getnframes()
+                    rate = wav_file.getframerate()
+                    duration = frames / float(rate)
+                    audio_durations.append(duration)
         else:
             for i in range(len(images)):
                 filename = f"{uuid.uuid4()}.mp3"
@@ -409,6 +404,9 @@ class MergeService:
                 audio_bitrate='192k'
             )
 
+        # Удаляем временные файлы
+        for f in video_files:
+            os.remove(f)
             # 9. Удаляем временные файлы
             os.remove(audio_paths[i])
 
@@ -432,7 +430,6 @@ class MergeService:
 
         return output_file_path
 
-
     def _get_asset_status(self, pipeline_guid: str) -> Dict[str, bool]:
         """Get completion status for both asset types from Redis."""
         return {
@@ -442,35 +439,64 @@ class MergeService:
 
     def _handle_completion(self, pipeline_guid: str, video_guid: str):
         """Trigger video generation when both assets are ready."""
+        temp_images = []
+        temp_audios = []
+        temp_structure = None
+        output_file_path = None
+
         try:
             # Download structure file
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_structure = temp_file.name
                 S3Service.download(
                     bucket_name=pipeline_guid,
                     source="structure.json",
-                    destination=temp_file.name
+                    destination=temp_structure
                 )
-                with open(temp_file.name, 'r', encoding='utf-8') as f:
+                with open(temp_structure, 'r', encoding='utf-8') as f:
                     structure = json.load(f)
-                
-                prompts = [p['photo_prompt'] for p in structure]
-                texts = [p['text'] for p in structure]
+
+            # Download generated assets
+            images = []
+            audio_paths = []
+            for i, _ in enumerate(structure):
+                # Download image
+                img_key = f"photos/photo{i+1}.jpg"
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_img:
+                    S3Service.download(
+                        bucket_name=pipeline_guid,
+                        source=img_key,
+                        destination=temp_img.name
+                    )
+                    images.append(temp_img.name)
+                    temp_images.append(temp_img.name)
+
+                # Download audio
+                audio_key = f"audio/audio{i+1}.wav"
+                with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_audio:
+                    S3Service.download(
+                        bucket_name=pipeline_guid,
+                        source=audio_key,
+                        destination=temp_audio.name
+                    )
+                    audio_paths.append(temp_audio.name)
+                    temp_audios.append(temp_audio.name)
 
             # Generate final video
-            output_path = f"{video_guid}.mp4"
-            self._process_video_generation(
-                prompts=prompts,
-                display_texts=texts,
-                speech_texts=texts,
+            output_file_path = self._process_video_generation(
+                images=images,
+                display_texts=[p['text'] for p in structure],
+                audio_paths=audio_paths,
+                speech_texts=[p['text'] for p in structure],
                 enableAudio=True,
                 enableSubTitles=True
             )
 
-            # Upload to S3
+            # Upload video to S3
             S3Service.upload(
                 bucket_name=pipeline_guid,
-                destination=output_path,
-                source=output_path
+                destination=f"{video_guid}.mp4",
+                source=output_file_path
             )
 
             # Notify pipeline
@@ -483,10 +509,6 @@ class MergeService:
                 }
             )
 
-            # Cleanup
-            self.redis.delete(f"{pipeline_guid}:audio")
-            self.redis.delete(f"{pipeline_guid}:photos")
-
         except Exception as e:
             self.logger.error("Video generation failed: %s", e)
             self.producer.send_message(
@@ -497,6 +519,25 @@ class MergeService:
                     "reason": str(e)
                 }
             )
+        finally:
+            # Cleanup temporary files
+            for path in [temp_structure, output_file_path]:
+                if path and os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except Exception as e:
+                        self.logger.warning("Failed to clean up %s: %s", path, e)
+            
+            for path in temp_images + temp_audios:
+                if path and os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except Exception as e:
+                        self.logger.warning("Failed to clean up %s: %s", path, e)
+
+            # Clean Redis state
+            self.redis.delete(f"{pipeline_guid}:audio")
+            self.redis.delete(f"{pipeline_guid}:photos")
 
     def process_message(self, message: Dict[str, Any], _):
         """Process incoming merge requests."""
