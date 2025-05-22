@@ -112,11 +112,11 @@ class PhotoService:
         """Processes incoming Kafka messages to generate images."""
         pipeline_guid = None
         try:
-            if message.get('action') != 'start_image_generation':
+            if message.get('action') != 'StartPhotoGeneration':
                 return
 
-            pipeline_guid = message['pipeline_guid']
-            video_guid = message['video_guid']
+            pipeline_guid = message['TaskId']
+            video_guid = message['VideoId']
             self.logger.info("Starting image generation for pipeline %s", pipeline_guid)
 
             self._generate_photos(pipeline_guid, video_guid)
@@ -125,20 +125,20 @@ class PhotoService:
             self.producer.send_message(
                 topic="merge_requests",
                 value={
-                    "status": "photos_completed",
-                    "pipeline_guid": pipeline_guid,
-                    "video_guid": video_guid
+                    "Status": "photos_completed",
+                    "TaskId": pipeline_guid,
+                    "VideoId": video_guid
                 }
             )
 
-            # Notify PipelineService
-            self.producer.send_message(
-                topic="pipeline_responses",
-                value={
-                    "pipeline_guid": pipeline_guid,
-                    "status": "photos_finished"
-                }
-            )
+            # # Notify PipelineService
+            # self.producer.send_message(
+            #     topic="statusUpdates",
+            #     value={
+            #         "TaskId": pipeline_guid,
+            #         "status": "photos_finished"
+            #     }
+            # )
 
         except Exception as e:
             self.logger.error("Photo processing failed: %s", e)
