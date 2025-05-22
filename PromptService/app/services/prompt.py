@@ -118,18 +118,18 @@ class PromptService:
     def _request_start_audio(self, pipeline_guid: str, video_guid: str):
         """Notifies AudioService to start processing via Kafka."""
         message = {
-            "action": "start_audio_generation",
-            "pipeline_guid": pipeline_guid,
-            "video_guid": video_guid
+            "Action": "StartAudioGeneration",
+            "TaskId": pipeline_guid,
+            "VideoId": video_guid
         }
         self.producer.send_message("audio_requests", message)
 
     def _request_start_photo(self, pipeline_guid: str, video_guid: str):
         """Notifies PhotoService to start processing via Kafka."""
         message = {
-            "action": "start_image_generation",
-            "pipeline_guid": pipeline_guid,
-            "video_guid": video_guid
+            "Action": "StartPhotoGeneration",
+            "TaskId": pipeline_guid,
+            "VideoId": video_guid
         }
         self.producer.send_message("photo_requests", message)
 
@@ -140,15 +140,22 @@ class PromptService:
             video_guid = message["video_guid"]
             user_prompt = message["prompt"]
             
+            self.producer.send_message(
+                "statusUpdates",
+                {
+                    "TaskId": pipeline_guid,
+                    "Status": 1 # Analyze Letter
+                }
+            )
+
             # Step 1: Moderate prompt
             if not self._moderate_prompt(user_prompt):
                 self.logger.warning("Prompt rejected for pipeline %s", pipeline_guid)
                 self.producer.send_message(
-                    "pipeline_responses",
+                    "statusUpdates",
                     {
-                        "pipeline_guid": pipeline_guid,
-                        "status": "rejected",
-                        "reason": "Inappropriate content"
+                        "TaskId": pipeline_guid,
+                        "Status": 10 # Cancelled (rejected) //TODO: use a better code
                     }
                 )
                 return
@@ -162,10 +169,10 @@ class PromptService:
             
             # Notify pipeline of success
             self.producer.send_message(
-                "pipeline_responses",
+                "statusUpdates",
                 {
-                    "pipeline_guid": pipeline_guid,
-                    "status": "prompt_started"
+                    "TaskId": pipeline_guid,
+                    "Status": 8 # Success
                 }
             )
             
@@ -174,11 +181,10 @@ class PromptService:
         except Exception as e:
             self.logger.error("Failed to process message: %s", e)
             self.producer.send_message(
-                "pipeline_responses",
+                "statusUpdates",
                 {
-                    "pipeline_guid": pipeline_guid,
-                    "status": "prompt_error",
-                    "reason": str(e)
+                    "TaskId": pipeline_guid,
+                    "Status": 11 # Error
                 }
             )
 
