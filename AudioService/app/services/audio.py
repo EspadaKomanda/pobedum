@@ -67,11 +67,11 @@ class AudioService:
         Processes incoming Kafka messages to generate audio files.
         """
         try:
-            if not message.get('action') == 'start_audio_generation':
+            if not message.get('action') == 'StartAudioGeneration':
                 return
 
-            pipeline_guid = message['pipeline_guid']
-            video_guid = message['video_guid']
+            pipeline_guid = message['TaskId']
+            video_guid = message['VideoId']
             self.logger.info("Starting audio generation for pipeline %s", pipeline_guid)
 
             # Download structure.json from S3
@@ -116,20 +116,20 @@ class AudioService:
             self.producer.send_message(
                 topic="merge_requests",
                 value={
-                    "status": "audio_completed",
-                    "pipeline_guid": pipeline_guid,
-                    "video_guid": video_guid
+                    "Status": "audio_completed",
+                    "TaskId": pipeline_guid,
+                    "VideoId": video_guid
                 }
             )
 
-            # Notify PipelineService
-            self.producer.send_message(
-                topic="pipeline_responses",
-                value={
-                    "pipeline_guid": pipeline_guid,
-                    "status": "audio_finished"
-                }
-            )
+            # # Notify PipelineService
+            # self.producer.send_message(
+            #     topic="pipeline_responses",
+            #     value={
+            #         "pipeline_guid": pipeline_guid,
+            #         "status": "audio_finished"
+            #     }
+            # )
 
         except Exception as e:
             self.logger.error("Audio processing failed: %s", e)

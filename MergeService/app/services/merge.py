@@ -328,11 +328,19 @@ class MergeService:
 
     def _process_video_generation(self,
         images, display_texts, audio_paths, speech_texts, fps = 30, frameTime = 5.0,
-        enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center'):
+        enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center', task_id = None):
         """Processes the video generation"""
 
         # Аудио
         audio_durations = []
+            
+        self.producer.send_message(
+            topic="statusUpdates",
+            value={
+                "Status": 5, # Add sound
+                "TaskId": task_id,
+            }
+        )
 
         if (enableAudio):
             for file_path in audio_paths:
@@ -347,6 +355,14 @@ class MergeService:
                 self._create_silent_audio(filename, duration=frameTime)
                 audio_paths.append(filename)
                 audio_durations.append(frameTime)
+
+        self.producer.send_message(
+            topic="statusUpdates",
+            value={
+                "Status": 4, # Making videos
+                "TaskId": task_id,
+            }
+        )
 
         # Создаём видио
         video_files = []
@@ -412,6 +428,14 @@ class MergeService:
 
             video_files.append(out_path)
 
+        self.producer.send_message(
+            topic="statusUpdates",
+            value={
+                "Status": 6, # Merge videos
+                "TaskId": task_id,
+            }
+        )
+
         # Склейка
         for i, f in enumerate(video_files, 1):
             print(f"{i}. {f}")
@@ -423,6 +447,14 @@ class MergeService:
             
             # Call your function to combine videos and save the output to the temporary file
             output_file_path = self._combine_videos(video_files, temp_file_name, fadingType, 1.0)
+
+        self.producer.send_message(
+            topic="statusUpdates",
+            value={
+                "Status": 7, # Final process
+                "TaskId": task_id,
+            }
+        ) 
 
         # Удаляем временные файлы
         for f in video_files:
@@ -489,7 +521,9 @@ class MergeService:
                 audio_paths=audio_paths,
                 speech_texts=[p['text'] for p in structure],
                 enableAudio=True,
-                enableSubTitles=True
+                enableSubTitles=True,
+                task_id=pipeline_guid # For updating status for pipeline
+                
             )
 
             # Upload video to S3
@@ -501,22 +535,21 @@ class MergeService:
 
             # Notify pipeline
             self.producer.send_message(
-                topic="pipeline_responses",
+                topic="statusUpdates",
                 value={
-                    "pipeline_guid": pipeline_guid,
-                    "status": "video_completed",
-                    "video_guid": video_guid
+                    "TaskId": pipeline_guid,
+                    "Status": 7, # Success
+                    "VideoId": video_guid
                 }
             )
 
         except Exception as e:
             self.logger.error("Video generation failed: %s", e)
             self.producer.send_message(
-                topic="pipeline_responses",
+                topic="statusUpdates",
                 value={
-                    "pipeline_guid": pipeline_guid,
-                    "status": "error",
-                    "reason": str(e)
+                    "TaskId": pipeline_guid,
+                    "Status": 11 # Error 
                 }
             )
         finally:
