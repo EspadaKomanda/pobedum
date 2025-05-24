@@ -575,10 +575,10 @@ class MergeService:
     def process_message(self, message: Dict[str, Any], _):
         """Process incoming merge requests."""
         try:
-            pipeline_guid = message['pipeline_guid']
-            video_guid = message['video_guid']
+            pipeline_guid = message['TaskId']
+            video_guid = message['VideoId']
 
-            if not message['status'] in ['audio_finished', 'photos_finished']:
+            if not message['Status'] in ['audio_finished', 'photos_finished']:
                 return
 
             status_type = 'audio' if message['status'] == 'audio_finished' else 'photos'
