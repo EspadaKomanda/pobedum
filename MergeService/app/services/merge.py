@@ -578,10 +578,16 @@ class MergeService:
             pipeline_guid = message['TaskId']
             video_guid = message['VideoId']
 
-            if not message['Status'] in ['audio_finished', 'photos_finished']:
-                return
+            status = message['Status']
 
-            status_type = 'audio' if message['status'] == 'audio_finished' else 'photos'
+            # This logic isn't particularly good but it's alright for now
+            if status == 'audio_finished':
+                status_type = 'audio'
+            elif status == 'photos_finihsed':
+                status_type = 'photos'
+            else:
+                self.logger.error("Incorrect status type: %s", status)
+                return
 
             # Update completion status
             self.redis.set(f"{pipeline_guid}:{status_type}", "completed")
