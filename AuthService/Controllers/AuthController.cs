@@ -1,8 +1,7 @@
-using AuthService.Models.BasicResponses;
-using AuthService.Models.Database.Users;
-using AuthService.Models.Requests.Users;
+using AuthService.Models.Database;
+using AuthService.Models.Requests;
 using AuthService.Models.Responses.Users;
-using AuthService.Services.JWT;
+using AuthService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,26 +9,28 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuthService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("/v1/[controller]")]
 public class AuthController : ControllerBase
 {
-    #region Services
-    
-    private readonly ILogger<AuthController> _logger;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly IJwtService _jwtService;
-    
+
+    #region Fields
+
+    private readonly UserManager<User> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly SignInManager<User> _signInManager;
+    private readonly IJWTService _jwtService;
+
     #endregion
+
 
     #region Constructor
 
-    public AuthController(ILogger<AuthController> logger, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IJwtService jwtService)
+    public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IJWTService jwtService, RoleManager<IdentityRole> roleManager)
     {
-        _logger = logger;
         _userManager = userManager;
         _signInManager = signInManager;
         _jwtService = jwtService;
+        _roleManager = roleManager;
     }
 
     #endregion
@@ -37,94 +38,69 @@ public class AuthController : ControllerBase
     #region Actions
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] CreateUserRequest model)
+    [AllowAnonymous]
+    public async Task<IActionResult> Register(RegisterModel model)
     {
-        try
+        if (await _userManager.FindByNameAsync(model.Username) != null)
         {
-            var user = new ApplicationUser()
-            {
-                UserName = model.Username,
-                Email = model.Email
-            };
-
-            var result = await _userManager.CreateAsync(user, model.Password);
-    
-            if (!result.Succeeded)
-            {
-                _logger.LogError("User registration failed: {Errors}", result.Errors);
-                return BadRequest(new BasicResponse
-                {
-                    Code = 400,
-                    Message = "User registration failed"
-                });
-            }
-
-            _logger.LogInformation("User registered successfully: {Username}", model.Username);
-            return Ok(new BasicResponse
-            {
-                Code = 200,
-                Message = "User created successfully"
-            });
+            return BadRequest("Username is already taken");
         }
-        catch (Exception ex)
+
+        if (await _userManager.FindByEmailAsync(model.Email) != null)
         {
-            _logger.LogError(ex, "An error occurred during user registration: {Message}", ex.Message);
-            return StatusCode(500, new BasicResponse
-            {
-                Code = 500,
-                Message = "An error occurred during user registration"
-            });
+            return BadRequest("Email is already registered");
         }
-    }
-    
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest model)
-    {
-        try
-        {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            
-            if (user == null)
-            {
-                _logger.LogError("Invalid username or password");
-                return NotFound(new BasicResponse
-                {
-                    Code = 404,
-                    Message = "Invalid username or password"
-                });
-            }
-            var result =  await _signInManager.PasswordSignInAsync( user, model.Password, false, model.RememberMe);
 
-            if (result.Succeeded)
-            {
-                var accessToken = _jwtService.GenerateAccessToken(user);
-                _logger.LogInformation("User logged in successfully: {Username}", model.Username);
-
-                return Ok(new LoginResultResponse()
-                {
-                    Success = true,
-                    Token = accessToken
-                });
-            }
-            
-            _logger.LogError("Invalid username or password");
-            return BadRequest(new BasicResponse
-            {
-                Code = 400,
-                Message = "Invalid username or password"
-            });
+        var user = new User 
+        { 
+            UserName = model.Username, 
+            Email = model.Email,
+            Fullname = model.Fullname,
+        };
+        var result = await _userManager.CreateAsync(user, model.Password);
         
-        }
-        catch (Exception ex)
+        if (result.Succeeded)
         {
-            _logger.LogError(ex, "An error occurred during user login: {Message}", ex.Message);
-            return StatusCode(500, new BasicResponse
-            {
-                Code = 500,
-                Message = "An error occurred during user login"
-            });
+            await _userManager.AddToRoleAsync(user, "User");
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return Ok(new { Message = "Registration successful" });
         }
+        
+        return BadRequest(result.Errors);
     }
+
+    [HttpPost("login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Login(LoginModel model)
+    {
+        var user = await _userManager.FindByNameAsync(model.UserName);
+
+        if (user == null)
+        {
+            return Unauthorized("Invalid username or password");
+        }
+
+        var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+        
+        if (result.Succeeded)
+        {
+            var token = await _jwtService.GenerateToken(user);
+            return Ok(new { Token = token });
+        }
+        
+        return Unauthorized("Invalid username or password");
+    }
+    
+    
+    [HttpGet("Test")]
+    [Authorize()]
+    public async Task<IActionResult> Test()
+    {
+        
+        return Ok();
+        
+    }
+    
     
     [Authorize]
     [HttpGet("internal-auth")]
@@ -137,9 +113,10 @@ public class AuthController : ControllerBase
         }
         return Ok(new InternalAuthResponse()
         {
-            Id = user.Id,
-            Role = user.Role.Name
+            Id = Guid.Parse(user.Id),
+            Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault()!
         }); 
     }
+
     #endregion
 }
