@@ -575,13 +575,19 @@ class MergeService:
     def process_message(self, message: Dict[str, Any], _):
         """Process incoming merge requests."""
         try:
-            pipeline_guid = message['pipeline_guid']
-            video_guid = message['video_guid']
+            pipeline_guid = message['TaskId']
+            video_guid = message['VideoId']
 
-            if not message['status'] in ['audio_finished', 'photos_finished']:
+            status = message['Status']
+
+            # This logic isn't particularly good but it's alright for now
+            if status == 'audio_finished':
+                status_type = 'audio'
+            elif status == 'photos_finihsed':
+                status_type = 'photos'
+            else:
+                self.logger.error("Incorrect status type: %s", status)
                 return
-
-            status_type = 'audio' if message['status'] == 'audio_finished' else 'photos'
 
             # Update completion status
             self.redis.set(f"{pipeline_guid}:{status_type}", "completed")

@@ -30,6 +30,8 @@ class YandexSpeechKitService:
     leveraging Yandex SpeechKit's capabilities for speech-to-text and text-to-speech conversions.
     """
 
+    # FIXME: Please, verify that this works, apparently saves an .xml file but not sure
+    # about the audio file
     def synthesize_to_s3(
         self, text: str, s3_bucket: str, s3_key: str, voice: str = "john"
     ) -> str:
