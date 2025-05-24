@@ -27,7 +27,7 @@ class PromptService:
         self.openai_service = OpenAIService(api_key=DEEPSEEK_API_KEY, mode="deepseek")
         
         self.consumer = ThreadedKafkaConsumer(
-            topics=['generation_requests'],
+            topics=['generation_requests'], # TODO: topic to listen to pipline gen requests
             group_id='prompt-service',
             bootstrap_servers=kafka_bootstrap_servers,
             message_callback=self.process_message
@@ -41,6 +41,7 @@ class PromptService:
         Moderates the prompt using DeepSeek's API.
         Returns True if the prompt is appropriate, False otherwise.
         """
+        # TODO: update moderation prompt
         moderation_instruction = (
             "Analyze the following prompt for inappropriate content (violence, hate speech, explicit material). "
             "Respond with a JSON object containing one boolean field 'ok'. Example: {'ok': true}.\n\n"
@@ -68,6 +69,7 @@ class PromptService:
         Generates structured data (paragraphs + image prompts) and saves to S3.
         Returns the generated JSON string.
         """
+        # TODO: update image generation prompt
         generation_instruction = (
             "Split the story into paragraphs. For each, provide 'text' for audio and 'photo_prompt' for image generation. "
             "Also provide the voice (male of female) which should be used to voice the paragraph in field 'voice'. "
@@ -118,7 +120,7 @@ class PromptService:
     def _request_start_audio(self, pipeline_guid: str, video_guid: str):
         """Notifies AudioService to start processing via Kafka."""
         message = {
-            "Action": "StartAudioGeneration",
+            "Action": "StartAudioGeneration", # TODO: make sure action is the same in audio service
             "TaskId": pipeline_guid,
             "VideoId": video_guid
         }
@@ -127,7 +129,7 @@ class PromptService:
     def _request_start_photo(self, pipeline_guid: str, video_guid: str):
         """Notifies PhotoService to start processing via Kafka."""
         message = {
-            "Action": "StartPhotoGeneration",
+            "Action": "StartPhotoGeneration", # TODO: make sure action is the same in photo service
             "TaskId": pipeline_guid,
             "VideoId": video_guid
         }
@@ -155,7 +157,7 @@ class PromptService:
                     "statusUpdates",
                     {
                         "TaskId": pipeline_guid,
-                        "Status": 10 # Cancelled (rejected) //TODO: use a better code
+                        "Status": 10 # Cancelled (rejected) # XXX: use a better code
                     }
                 )
                 return
