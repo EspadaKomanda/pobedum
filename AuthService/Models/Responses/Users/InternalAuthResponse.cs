@@ -1,4 +1,3 @@
-using AuthService.Models.DTOs.Roles;
 
 namespace AuthService.Models.Responses.Users;
 
