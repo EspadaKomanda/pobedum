@@ -201,3 +201,9 @@ networks:
   app-network:
     driver: bridge
 
+
+  videoservice:
+    image: videoservice
+    build:
+      context: .
+      dockerfile: VideoService/Dockerfile
