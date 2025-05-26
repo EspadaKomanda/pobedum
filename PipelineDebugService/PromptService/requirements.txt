@@ -1,0 +1,16 @@
+confluent-kafka
+fastapi[standard]
+fastapi-controllers
+httpx
+minio
+openai
+passlib[bcrypt]
+peewee
+pendulum
+psycopg2-binary
+pydantic
+pyjwt
+python-dotenv
+redis[hiredis]
+uvicorn
+yandex-speechkit
