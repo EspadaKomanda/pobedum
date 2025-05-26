@@ -11,7 +11,7 @@ from typing import Dict, Any
 from app.services.openai import OpenAIService, APIException
 from app.services.s3 import S3Service
 from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
-from app.config import OPENAI_API_KEY
+from app.config import OPENAI_API_KEY, GEN_MODE
 
 logger = logging.getLogger(__name__)
 
@@ -69,13 +69,21 @@ class PhotoService:
             for idx, paragraph in enumerate(structure, start=1):
                 prompt = paragraph['photo_prompt']
                 
-                # Generate single HD quality image
-                image_urls = self.openai_service.generate_image(
-                    prompt=prompt,
-                    n=1,
-                    size="1024x1024",
-                    quality="hd"
-                )
+                image_urls = []
+
+                if GEN_MODE == 'plug':
+
+                    image_urls = ["http://cloud.weirdcat.su/s/plug_photo/download/plug.jpg"]
+
+                else:
+
+                    # Generate single HD quality image
+                    image_urls = self.openai_service.generate_image(
+                        prompt=prompt,
+                        n=1,
+                        size="1024x1024",
+                        quality="hd"
+                    )
                 
                 # Download and store image
                 temp_image_path = self._download_image(image_urls[0])
