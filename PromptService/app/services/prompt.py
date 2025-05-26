@@ -11,7 +11,7 @@ from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
 from app.services.openai import OpenAIService, APIException
 from app.services.s3 import S3Service
 
-from app.config import DEEPSEEK_API_KEY
+from app.config import DEEPSEEK_API_KEY, GEN_MODE
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,9 @@ class PromptService:
         Moderates the prompt using DeepSeek's API.
         Returns True if the prompt is appropriate, False otherwise.
         """
+        if GEN_MODE == "plug":
+            return True
+
         # TODO: update moderation prompt
         moderation_instruction = (
             "Analyze the following prompt for inappropriate content (violence, hate speech, explicit material). "
@@ -78,12 +81,28 @@ class PromptService:
         )
         
         try:
-            response = self.openai_service.chat_completion(
-                prompt=generation_instruction,
-                model="deepseek-chat",
-                temperature=0.7,
-                max_tokens=1000
-            )
+            
+            response = ""
+            if GEN_MODE == "plug":
+
+                response = json.loads(
+                    "["
+                        "{'text': 'Hello people1', 'photo_prompt': 'photo description', 'voice': 'male'},"
+                        "{'text': 'Hello people2', 'photo_prompt': 'photo description', 'voice': 'male'},"
+                        "{'text': 'Hello people3', 'photo_prompt': 'photo description', 'voice': 'male'},"
+                        "{'text': 'Hello people4', 'photo_prompt': 'photo description', 'voice': 'male'}"
+                    "]"
+                )
+
+            else:
+
+                response = self.openai_service.chat_completion(
+                    prompt=generation_instruction,
+                    model="deepseek-chat",
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+
             paragraphs = json.loads(response)
             
             # Validate structure
@@ -143,7 +162,7 @@ class PromptService:
             user_prompt = message["prompt"]
             
             self.producer.send_message(
-                "statusUpdates",
+                "status_update_requests",
                 {
                     "TaskId": pipeline_guid,
                     "Status": 1 # Analyze Letter
@@ -154,7 +173,7 @@ class PromptService:
             if not self._moderate_prompt(user_prompt):
                 self.logger.warning("Prompt rejected for pipeline %s", pipeline_guid)
                 self.producer.send_message(
-                    "statusUpdates",
+                    "status_update_requests",
                     {
                         "TaskId": pipeline_guid,
                         "Status": 10 # Cancelled (rejected) # XXX: use a better code
@@ -171,7 +190,7 @@ class PromptService:
             
             # Notify pipeline of success
             self.producer.send_message(
-                "statusUpdates",
+                "status_update_requests",
                 {
                     "TaskId": pipeline_guid,
                     "Status": 8 # Success
@@ -183,7 +202,7 @@ class PromptService:
         except Exception as e:
             self.logger.error("Failed to process message: %s", e)
             self.producer.send_message(
-                "statusUpdates",
+                "status_update_requests",
                 {
                     "TaskId": pipeline_guid,
                     "Status": 11 # Error
