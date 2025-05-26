@@ -71,7 +71,8 @@ public class AuthCommunicator
         try
         {
             Dictionary<string, string> headers = new Dictionary<string, string>();
-            headers.Add("Authorization",token);
+            Console.WriteLine(token);
+            headers.Add("Authorization","Bearer "+token);
             return await _microservicesHttpClient.GetAsync<InternalAuthResponse>(_paths["InternalAuth"],headers);
         }
         catch (Exception e)

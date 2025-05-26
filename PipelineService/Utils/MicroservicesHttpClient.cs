@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Text;
 using Newtonsoft.Json;
 using PipelineService.Exceptions.HttpClient;
 
@@ -36,7 +37,8 @@ public class MicroservicesHttpClient
             {
                 request.Headers.Add(header.Key,header.Value);
             }
-
+            
+            
             return await SendRequest<T>(request);
 
         }
@@ -54,7 +56,7 @@ public class MicroservicesHttpClient
             HttpRequestMessage request = new HttpRequestMessage();
             request.RequestUri = new Uri(url);
             request.Method = HttpMethod.Post;
-            request.Content = new StringContent(JsonConvert.SerializeObject(body));
+            request.Content = new StringContent(JsonConvert.SerializeObject(body),Encoding.UTF8,"application/json");
             foreach (var header in headers)
             {
                 request.Headers.Add(header.Key,header.Value);
@@ -77,7 +79,7 @@ public class MicroservicesHttpClient
             HttpRequestMessage request = new HttpRequestMessage();
             request.RequestUri = new Uri(url);
             request.Method = HttpMethod.Delete;
-            request.Content = new StringContent(JsonConvert.SerializeObject(body));
+            request.Content = new StringContent(JsonConvert.SerializeObject(body),Encoding.UTF8,"application/json");
             foreach (var header in headers)
             {
                 request.Headers.Add(header.Key,header.Value);

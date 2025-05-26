@@ -38,6 +38,7 @@ public class LetterService : ILetterService
         {
             Letter letter = new Letter()
             {
+                Id = Guid.NewGuid(),
                 Title = createLetterRequest.Title,
                 Content = createLetterRequest.Content,
                 Resource = createLetterRequest.Resource,
@@ -126,7 +127,7 @@ public class LetterService : ILetterService
         }
     }
 
-    public async Task<(List<LetterDTO> Letters, int TotalCount)> GetAllLettersAsync(User? user, int pageNumber = 1, int pageSize = 10)
+    public async Task<GetLettersRequest> GetAllLettersAsync(User? user, int pageNumber = 1, int pageSize = 10)
     {
         var query = _unitOfWork.LetterRepository.Get();
     
@@ -149,11 +150,17 @@ public class LetterService : ILetterService
             IsOwned = letter.AuthorId == user.Id
         }).ToList();
         
-        return (result, totalItems);
+        return new GetLettersRequest()
+        {
+            
+            Letters = result,
+            TotalCount = result.Count
+            
+        };
        
     }
 
-    public async Task<(List<LetterDTO> Letters, int TotalCount)> GetAllLettersAsync(int pageNumber = 1, int pageSize = 10)
+    public async Task<GetLettersRequest> GetAllLettersAsync(int pageNumber = 1, int pageSize = 10)
     {
         var query = _unitOfWork.LetterRepository.Get();
     
@@ -176,7 +183,13 @@ public class LetterService : ILetterService
             IsOwned = false
         }).ToList();
         
-        return (result, totalItems);
+        return new GetLettersRequest()
+        {
+            
+            Letters = result,
+            TotalCount = result.Count
+            
+        };
         
     }
 

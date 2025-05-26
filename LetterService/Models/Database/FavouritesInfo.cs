@@ -6,5 +6,5 @@ public class FavouritesInfo
 {
     [Key]
     public Guid UserId { get; set; }
-    public List<Letter> Letters { get; set; }
+    public ICollection<Guid> Letters { get; set; }
 }

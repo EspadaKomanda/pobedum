@@ -1,13 +1,13 @@
+
+using ApiGatewayService.Communicators;
+using ApiGatewayService.Handlers;
+using ApiGatewayService.Services;
+using ApiGatewayService.Utils;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Exceptions;
 
-namespace ApiGatewayService;
-
-public class Program
-{
-    public static void Main(string[] args)
-    {
         ConfigureLogging();
         var builder = WebApplication.CreateBuilder(args);
 
@@ -17,13 +17,13 @@ public class Program
         {
             c.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "Auth service API", 
+                Title = "API Gateway Service", 
                 Version = "v1",
-                Description = "API микросервиса аутентификации",
+                Description = "API Gateway for microservices",
                 TermsOfService = new Uri("http://localhost:8080/terms"),
                 Contact = new OpenApiContact
                 {
-                    Name = "API поддержки",
+                    Name = "API Support",
                     Url = new Uri("http://localhost:8080/support")
                 },
                 License = new OpenApiLicense
@@ -37,12 +37,11 @@ public class Program
             
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                Description = "JWT Authorization header using the Bearer scheme",
+                Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
                 Name = "Authorization",
                 In = ParameterLocation.Header,
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat = "JWT"
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer"
             });
             
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -64,9 +63,26 @@ public class Program
         
         #endregion
         builder.Services.AddControllers();
+
+        builder.Services.AddHttpClient();
+        
+        builder.Services.AddSingleton<MicroservicesHttpClient>();
+        
+        builder.Services.AddSingleton<AuthCommunicator>();
+        builder.Services.AddSingleton<LettersCommunicator>();
+        builder.Services.AddSingleton<VideosCommunicator>();
+        builder.Services.AddSingleton<VideoGenerationCommunicator>();
+        
+        // Configure authentication
+        builder.Services
+            .AddAuthentication("Basic").AddScheme<MicroservicesAuthenticationOptions, MicroservicesAuthentificationHandler>("Basic",null);
+            
+        // Configure authorization policies
+        
         
         builder.Services.AddOpenApi();
         builder.Services.AddSerilog();
+        
         var app = builder.Build();
 
         if (app.Environment.IsDevelopment())
@@ -76,14 +92,18 @@ public class Program
 
         app.UseHttpsRedirection();
 
+        app.UseSwagger();
+        app.UseSwaggerUI();
+        
+        app.UseAuthentication();
         app.UseAuthorization(); 
 
         app.MapControllers();
 
         app.Run();
-    }
+    
 
-    static void ConfigureLogging(){
+void ConfigureLogging(){
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json",optional:false,reloadOnChange:true).Build();
@@ -98,4 +118,3 @@ public class Program
             .ReadFrom.Configuration(configuration)
             .CreateLogger();
     }
-}

@@ -7,10 +7,10 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["LetterService/LetterService.csproj", "LetterService/"]
-RUN dotnet restore "LetterService/LetterService.csproj"
+COPY ["LetterService.csproj", "./"]
+RUN dotnet restore "LetterService.csproj"
 COPY . .
-WORKDIR "/src/LetterService"
+WORKDIR "/src/."
 RUN dotnet build "LetterService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

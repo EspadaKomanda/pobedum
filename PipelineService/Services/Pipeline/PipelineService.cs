@@ -15,7 +15,7 @@ using PipelineService.Utils;
 
 namespace PipelineService.Services.Pipeline;
 
-[KafkaSimpleService("status_update_requests",3,2,MessageHandlerType.JSON,"PipelineService")]
+[KafkaSimpleService("status_update_requests",3,1,MessageHandlerType.JSON,"PipelineService")]
 public class PipelineService : IPipelineService
 {
     #region Fields
@@ -52,7 +52,7 @@ public class PipelineService : IPipelineService
             var pipelineItem = await _unitOfWork.PipelineRepository.InsertAsync(
                 new PipelineItem()
                 {
-                    BeginTime = DateTime.Now,
+                    BeginTime = DateTime.UtcNow,
                     ColorScheme = request.ColorScheme,
                     FrameRate = request.FrameRate,
                     Model = request.Model,
@@ -107,7 +107,7 @@ public class PipelineService : IPipelineService
             throw;
         }
     }
-    [KafkaMethod("updateStatus",1,false)]
+    [KafkaSimpleMethod("updateStatus",false)]
     public async Task UpdateStatus(UpdateStatusRequest request)
     {
         try

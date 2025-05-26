@@ -1,10 +1,11 @@
 using ApiGatewayService.Communicators;
 using ApiGatewayService.Models.BasicResponses;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.AspNetCore.Authorization;
 namespace ApiGatewayService.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
 public class VideoController : ControllerBase
 {

@@ -16,12 +16,12 @@ public class VideosCommunicator
 
     #region Constructor
 
-    public VideosCommunicator(ILogger<VideosCommunicator> logger, MicroservicesHttpClient microservicesHttpClient, IConfiguration configuration, Dictionary<string, string> paths)
+    public VideosCommunicator(ILogger<VideosCommunicator> logger, MicroservicesHttpClient microservicesHttpClient, IConfiguration configuration)
     {
         _logger = logger;
         _microservicesHttpClient = microservicesHttpClient;
         _configuration = configuration;
-        _paths = paths;
+        _paths = new Dictionary<string, string>();
         
         ConfigurePaths();
     }

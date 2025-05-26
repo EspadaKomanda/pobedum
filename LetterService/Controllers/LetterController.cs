@@ -42,7 +42,10 @@ public class LetterController : ControllerBase
         {
             if (userId != null && userRole != null)
             {
-                return Ok(await _letterService.GetAllLettersAsync(new User(){Id = (Guid)userId,Role = userRole},page,size));
+                var result =
+                    await _letterService.GetAllLettersAsync(new User() { Id = (Guid)userId, Role = userRole }, page,
+                        size);
+                return Ok(result);
 
             }
 
@@ -60,16 +63,16 @@ public class LetterController : ControllerBase
     }
     
     [HttpGet("{letterId}")]
-    public async Task<IActionResult> GetLetter([FromHeader]Guid? userId, [FromHeader]string userRole, Guid letterId)
+    public async Task<IActionResult> GetLetter([FromHeader]Guid? userId, [FromHeader]string userRole, string letterId)
     {
         try
         {
             if (userId != null && userRole != null)
             {
-                return Ok(await _letterService.GetLetterByIdAsync(new User(){Id = (Guid)userId,Role = userRole},letterId));
+                return Ok(await _letterService.GetLetterByIdAsync(new User(){Id = (Guid)userId,Role = userRole},Guid.Parse(letterId)));
             }
 
-            return Ok(await _letterService.GetLetterByIdAsync(letterId));
+            return Ok(await _letterService.GetLetterByIdAsync(Guid.Parse(letterId)));
         }
         catch (Exception e)
         {
@@ -101,13 +104,13 @@ public class LetterController : ControllerBase
     #region Favourites
 
     [HttpPost("{letterId}/favourite")]
-    public async Task<IActionResult> AddLetterToFavourites([FromBody] AddLetterToFavouritesRequest request, Guid letterId)
+    public async Task<IActionResult> AddLetterToFavourites([FromBody] AddLetterToFavouritesRequest request, string letterId)
     {
         try
         {
             return Ok(new BasicResponse()
             {
-                Message = (await _favouritesService.AddLetterToFavouritesAsync(request,letterId)).ToString(),
+                Message = (await _favouritesService.AddLetterToFavouritesAsync(request,Guid.Parse(letterId))).ToString(),
                 Code = 200
             });
         }
@@ -122,13 +125,13 @@ public class LetterController : ControllerBase
         }
     }
     [HttpDelete("{letterId}/favourite")]
-    public async Task<IActionResult> RemoveLetterFromFavourites([FromBody] RemoveLetterFromFavouritesRequest request, Guid letterId)
+    public async Task<IActionResult> RemoveLetterFromFavourites([FromBody] RemoveLetterFromFavouritesRequest request, string letterId)
     {
         try
         {
             return Ok(new BasicResponse()
             {
-                Message = (await _favouritesService.RemoveLetterFromFavouritesAsync(request, letterId)).ToString(),
+                Message = (await _favouritesService.RemoveLetterFromFavouritesAsync(request, Guid.Parse(letterId))).ToString(),
                 Code = 200
             });
         }

@@ -11,6 +11,7 @@ using LoginRequest = ApiGatewayService.Models.Microservices.AuthService.Requests
 namespace ApiGatewayService.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/v1/[controller]")]
 public class AuthController : ControllerBase
 {
@@ -22,9 +23,10 @@ public class AuthController : ControllerBase
 
     #region Constructor
 
-    public AuthController(ILogger<AuthController> logger)
+    public AuthController(ILogger<AuthController> logger, AuthCommunicator authCommunicator)
     {
         _logger = logger;
+        _authCommunicator = authCommunicator;
     }
 
     #endregion
@@ -44,7 +46,7 @@ public class AuthController : ControllerBase
             return BadRequest(new BasicResponse()
             {
                 Message = e.Message,
-                Code = 500
+                Code = 400
             });
         }
     }
@@ -54,14 +56,14 @@ public class AuthController : ControllerBase
     {
         try
         {
-            return Ok();
+            return Ok(await (_authCommunicator.SendLoginRequest(model)));
         }
         catch (Exception e)
         {
             _logger.LogError(e.Message, e);
             return BadRequest(new BasicResponse()
             {
-                Code = 500,
+                Code = 400,
                 Message = e.Message
             });
         }

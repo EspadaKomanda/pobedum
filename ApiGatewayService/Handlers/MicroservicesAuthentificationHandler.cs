@@ -32,25 +32,32 @@ public class MicroservicesAuthentificationHandler : AuthenticationHandler<Micros
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+
         try
         {
-            var token = Request.Headers["Autorization"].ToString();
+
+            var token = Request.Headers["Authorization"].ToString();
+            Console.WriteLine(token);
             var authResult = await _authCommunicator.HandleInternalAuth(token);
             var claims = new List<Claim>
             {
                 new Claim(ClaimsIdentity.DefaultNameClaimType, authResult.Id.ToString()),
                 new Claim(ClaimsIdentity.DefaultRoleClaimType, authResult.Role)
             };
-            var identity = new ClaimsIdentity(claims,Scheme.Name);
-            
-            var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity),Scheme.Name);
-            
+            var identity = new ClaimsIdentity(claims, Scheme.Name);
+
+            var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name);
+
             return AuthenticateResult.Success(ticket);
         }
         catch (UnauthorizedException ex)
         {
-            _logger.LogError(ex,ex.Message);
+            _logger.LogError(ex, ex.Message);
             return AuthenticateResult.Fail(ex.Message);
+        }
+        catch (System.FormatException ex)
+        {
+            return AuthenticateResult.NoResult();
         }
         catch (BadRequestException ex)
         {

@@ -1,6 +1,7 @@
 using ApiGatewayService.Models.BasicResponses;
 using ApiGatewayService.Models.Microservices.LetterService.DTOs;
 using ApiGatewayService.Models.Microservices.LetterService.Requests;
+using ApiGatewayService.Models.Microservices.LetterService.Responses;
 using ApiGatewayService.Utils;
 
 namespace ApiGatewayService.Communicators;
@@ -40,7 +41,7 @@ public class LettersCommunicator
         }
     }
 
-    public async Task<(List<LetterDTO> Letters, int TotalCount)> SendGetAllLettersRequest(Guid? userId,
+    public async Task<GetLettersRequest> SendGetAllLettersRequest(Guid? userId,
         string? userRole, int page, int size)
     {
         try
@@ -51,8 +52,10 @@ public class LettersCommunicator
                 headers.Add("userId",userId.ToString());
                 headers.Add("userRole",userRole);
             }
-
-            return await _microservicesHttpClient.GetAsync<(List<LetterDTO> Letters, int TotalCount)>($"{_paths["GetAllLetters"]}?page={page}?size={size}",headers);
+            string url = ($"{_paths["GetAllLetters"]}?page={page}&size={size}");
+            Console.WriteLine(page);
+            Console.WriteLine(size);
+            return await _microservicesHttpClient.GetAsync<GetLettersRequest>(url,headers);
 
         }
         catch (Exception e)

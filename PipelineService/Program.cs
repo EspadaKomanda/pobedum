@@ -2,18 +2,15 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using PipelineService.Autumn.Extensions;
+using PipelineService.Communicators;
 using PipelineService.Database;
 using PipelineService.Database.Repositories;
 using PipelineService.Services.Pipeline;
+using PipelineService.Utils;
 using Serilog;
 using Serilog.Exceptions;
 
-namespace PipelineService;
 
-public class Program
-{
-    public static void Main(string[] args)
-    {
         ConfigureLogging();
         var builder = WebApplication.CreateBuilder(args);
         
@@ -87,11 +84,17 @@ public class Program
 
         #endregion
 
-        builder.Services.AddScoped<IPipelineService, Services.Pipeline.PipelineService>();
+       
         
         builder.Services.AddControllers();
+        builder.Services.AddHttpClient();
         
+        builder.Services.AddSingleton<MicroservicesHttpClient>();
         builder.Services.AddOpenApi();
+      
+        builder.Services.AddSerilog();
+        builder.Services.AddSingleton<VideosCommunicator>();
+        builder.Services.AddScoped<IPipelineService, PipelineService.Services.Pipeline.PipelineService>();
         builder.Services.AddKafka(options =>
         {
             options.ProducerConfig = new Confluent.Kafka.ProducerConfig
@@ -109,10 +112,10 @@ public class Program
                 BootstrapServers = builder.Configuration["Kafka:BootstrapServers"] ?? "localhost:9092"
             };
         });
-        builder.Services.AddSerilog();
-        var app = builder.Build();
-
         
+        
+        
+        var app = builder.Build();
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
@@ -122,13 +125,16 @@ public class Program
 
         app.UseAuthorization();
         app.UseKafka(Assembly.GetExecutingAssembly());
-
+        
+        app.UseSwagger();
+        app.UseSwaggerUI();
+        
         app.MapControllers();
-
+        
         app.Run();
-    }
+    
 
-    private static void ConfigureLogging(){
+    void ConfigureLogging(){
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json",optional:false,reloadOnChange:true).Build();
@@ -143,4 +149,3 @@ public class Program
             .ReadFrom.Configuration(configuration)
             .CreateLogger();
     }
-}

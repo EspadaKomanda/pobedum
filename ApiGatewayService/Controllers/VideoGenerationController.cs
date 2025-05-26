@@ -36,7 +36,16 @@ public class VideoGenerationController : ControllerBase
     {
         try
         {
-            return Ok(await _videoGenerationCommunicator.SendBeginVideoGenerationRequest(Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimsIdentity.DefaultNameClaimType).Value), request)); 
+            Guid userId = Guid.Empty;
+            string userRole = "";
+            foreach (var claim in User.Claims)
+            {
+                if(claim.Type==ClaimTypes.Name)
+                    userId = Guid.Parse(claim.Value);
+                if(claim.Type==ClaimTypes.Role)
+                    userRole = claim.Value;   
+            }
+            return Ok(await _videoGenerationCommunicator.SendBeginVideoGenerationRequest(userId, request)); 
         }
         catch (Exception e)
         {

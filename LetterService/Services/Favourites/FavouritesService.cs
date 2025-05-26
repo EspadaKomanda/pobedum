@@ -36,15 +36,15 @@ public class FavouritesService : IFavouritesService
             {
                 favouriteInfo = new FavouritesInfo()
                 {
-                    UserId = letterId,
-                    Letters = _unitOfWork.LetterRepository.Get().Where(x => x.Id == letterId).ToList()
+                    UserId = addLetterToFavouritesRequest.User.Id,
+                    Letters = _unitOfWork.LetterRepository.Get().Where(x => x.Id == letterId).Select(x=>x.Id).ToList()
                 };
 
                 await _unitOfWork.FavouritesRepository.InsertAsync(favouriteInfo);
                 return await _unitOfWork.SaveAsync();
             }
 
-            favouriteInfo.Letters.Add(await _unitOfWork.LetterRepository.GetByIDAsync(letterId));
+            favouriteInfo.Letters.Add(letterId);
             _unitOfWork.FavouritesRepository.Update(favouriteInfo);
             return await _unitOfWork.SaveAsync();
         }
@@ -61,7 +61,7 @@ public class FavouritesService : IFavouritesService
         try
         {
             var favoritesInfo = await _unitOfWork.FavouritesRepository.GetByIDAsync(removeLetterFromFavouritesRequest.User.Id);
-            favoritesInfo.Letters.Remove(await _unitOfWork.LetterRepository.GetByIDAsync(letterId));
+            favoritesInfo.Letters.Remove(letterId);
             _unitOfWork.FavouritesRepository.Update(favoritesInfo);
 
             return await _unitOfWork.SaveAsync();
@@ -79,7 +79,7 @@ public class FavouritesService : IFavouritesService
         try
         {
             var favoritesInfo = await _unitOfWork.FavouritesRepository.GetByIDAsync(user.Id);
-            return favoritesInfo.Letters.Any(x => x.Id ==letterId);
+            return favoritesInfo.Letters.Any(x => x ==letterId);
         }
         catch (Exception e)
         {
