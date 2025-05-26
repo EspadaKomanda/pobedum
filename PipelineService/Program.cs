@@ -6,6 +6,7 @@ using PipelineService.Communicators;
 using PipelineService.Database;
 using PipelineService.Database.Repositories;
 using PipelineService.Services.Pipeline;
+using PipelineService.Services.Utils;
 using PipelineService.Utils;
 using Serilog;
 using Serilog.Exceptions;
@@ -93,6 +94,7 @@ using Serilog.Exceptions;
         builder.Services.AddOpenApi();
       
         builder.Services.AddSerilog();
+        builder.Services.AddSingleton<Pipeline>();
         builder.Services.AddSingleton<VideosCommunicator>();
         builder.Services.AddScoped<IPipelineService, PipelineService.Services.Pipeline.PipelineService>();
         builder.Services.AddKafka(options =>

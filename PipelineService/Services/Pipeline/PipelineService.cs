@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using PipelineService.Autumn.Attributes.MethodAttributes;
 using PipelineService.Autumn.Attributes.ServiceAttributes;
@@ -24,21 +25,21 @@ public class PipelineService : IPipelineService
     private readonly KafkaProducer _producer;
     private readonly VideosCommunicator _communicator;
     private readonly UnitOfWork _unitOfWork;
-    private List<Guid> _pipeline;
+    private readonly Utils.Pipeline _pipeline;
     private IConfiguration _configuration;
     
     #endregion
 
     #region Constructor
 
-    public PipelineService(ILogger<PipelineService> logger, KafkaProducer producer, VideosCommunicator communicator, UnitOfWork unitOfWork, IConfiguration configuration)
+    public PipelineService(ILogger<PipelineService> logger, KafkaProducer producer, VideosCommunicator communicator, UnitOfWork unitOfWork, IConfiguration configuration, Utils.Pipeline pipeline)
     {
         _logger = logger;
         _producer = producer;
         _communicator = communicator;
         _unitOfWork = unitOfWork;
         _configuration = configuration;
-        _pipeline = new List<Guid>();
+        _pipeline = pipeline;
     }
 
     #endregion
@@ -149,17 +150,18 @@ public class PipelineService : IPipelineService
     {
         try
         {
-            var pipelineItem = await _unitOfWork.PipelineRepository.GetByIDAsync(taskId);
+            var pipelineItem = await _unitOfWork.PipelineRepository.Get().FirstOrDefaultAsync(x => x.VideoId ==taskId);
             int progres = 0;
             int eta = 0;
-            if (pipelineItem.EndTime != null)
+            if (pipelineItem.EndTime != null && pipelineItem.BeginTime != null)
             {
-                eta = Convert.ToInt32(pipelineItem.EndTime - pipelineItem.BeginTime);
-                
+                TimeSpan duration = pipelineItem.EndTime.Value - pipelineItem.BeginTime;
+                eta = Convert.ToInt32(duration.TotalSeconds); // or TotalMilliseconds/TotalMinutes
             }
             else
             {
-                eta = Convert.ToInt32(DateTime.Now - pipelineItem.BeginTime);
+                TimeSpan duration = DateTime.Now - pipelineItem.BeginTime;
+                eta = Convert.ToInt32(duration.TotalSeconds); 
             }
             switch (pipelineItem.Status)
             {
@@ -214,12 +216,14 @@ public class PipelineService : IPipelineService
 
     public int GetQueuePosition(Guid taskId)
     {
-        if (!_pipeline.Contains(taskId))
+        var pipelineItem =  _unitOfWork.PipelineRepository.Get().FirstOrDefault(x => x.VideoId ==taskId);
+
+        if (!_pipeline.Contains(pipelineItem.Id))
         {
             return -1;
         }
 
-        return _pipeline.IndexOf(taskId);
+        return _pipeline.IndexOf(pipelineItem.Id);
     }
 
     #endregion
