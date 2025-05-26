@@ -335,7 +335,7 @@ class MergeService:
         audio_durations = []
             
         self.producer.send_message(
-            topic="statusUpdates",
+            topic="status_update_requests",
             value={
                 "Status": 5, # Add sound
                 "TaskId": task_id,
@@ -357,7 +357,7 @@ class MergeService:
                 audio_durations.append(frameTime)
 
         self.producer.send_message(
-            topic="statusUpdates",
+            topic="status_update_requests",
             value={
                 "Status": 4, # Making videos
                 "TaskId": task_id,
@@ -429,7 +429,7 @@ class MergeService:
             video_files.append(out_path)
 
         self.producer.send_message(
-            topic="statusUpdates",
+            topic="status_update_requests",
             value={
                 "Status": 6, # Merge videos
                 "TaskId": task_id,
@@ -449,7 +449,7 @@ class MergeService:
             output_file_path = self._combine_videos(video_files, temp_file_name, fadingType, 1.0)
 
         self.producer.send_message(
-            topic="statusUpdates",
+            topic="status_update_requests",
             value={
                 "Status": 7, # Final process
                 "TaskId": task_id,
@@ -535,7 +535,7 @@ class MergeService:
 
             # Notify pipeline
             self.producer.send_message(
-                topic="statusUpdates",
+                topic="status_update_requests",
                 value={
                     "TaskId": pipeline_guid,
                     "Status": 7, # Success
@@ -546,7 +546,7 @@ class MergeService:
         except Exception as e:
             self.logger.error("Video generation failed: %s", e)
             self.producer.send_message(
-                topic="statusUpdates",
+                topic="status_update_requests",
                 value={
                     "TaskId": pipeline_guid,
                     "Status": 11 # Error 

@@ -141,7 +141,7 @@ class PhotoService:
 
             # # Notify PipelineService
             # self.producer.send_message(
-            #     topic="statusUpdates",
+            #     topic="status_update_requests",
             #     value={
             #         "TaskId": pipeline_guid,
             #         "status": "photos_finished"

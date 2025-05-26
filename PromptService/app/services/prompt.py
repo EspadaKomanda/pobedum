@@ -162,7 +162,7 @@ class PromptService:
             user_prompt = message["prompt"]
             
             self.producer.send_message(
-                "statusUpdates",
+                "status_update_requests",
                 {
                     "TaskId": pipeline_guid,
                     "Status": 1 # Analyze Letter
@@ -173,7 +173,7 @@ class PromptService:
             if not self._moderate_prompt(user_prompt):
                 self.logger.warning("Prompt rejected for pipeline %s", pipeline_guid)
                 self.producer.send_message(
-                    "statusUpdates",
+                    "status_update_requests",
                     {
                         "TaskId": pipeline_guid,
                         "Status": 10 # Cancelled (rejected) # XXX: use a better code
@@ -190,7 +190,7 @@ class PromptService:
             
             # Notify pipeline of success
             self.producer.send_message(
-                "statusUpdates",
+                "status_update_requests",
                 {
                     "TaskId": pipeline_guid,
                     "Status": 8 # Success
@@ -202,7 +202,7 @@ class PromptService:
         except Exception as e:
             self.logger.error("Failed to process message: %s", e)
             self.producer.send_message(
-                "statusUpdates",
+                "status_update_requests",
                 {
                     "TaskId": pipeline_guid,
                     "Status": 11 # Error
