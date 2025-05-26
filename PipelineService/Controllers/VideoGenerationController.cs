@@ -7,7 +7,7 @@ using PipelineService.Services.Pipeline;
 namespace PipelineService.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("/api/v1/[controller]")]
 public class VideoGenerationController : ControllerBase
 {
     #region Services

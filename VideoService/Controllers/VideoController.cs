@@ -7,7 +7,7 @@ using VideoService.Services.Videos;
 namespace VideoService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("/api/v1/[controller]")]
 public class VideoController : ControllerBase
 {
     #region Fields

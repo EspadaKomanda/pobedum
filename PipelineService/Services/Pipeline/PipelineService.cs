@@ -15,7 +15,7 @@ using PipelineService.Utils;
 
 namespace PipelineService.Services.Pipeline;
 
-[KafkaSimpleService("statusUpdates",3,2,MessageHandlerType.JSON,"PipelineService")]
+[KafkaSimpleService("status_update_requests",3,2,MessageHandlerType.JSON,"PipelineService")]
 public class PipelineService : IPipelineService
 {
     #region Fields

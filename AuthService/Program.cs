@@ -11,6 +11,8 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Exceptions;
 
+ConfigureLogging();
+
 var builder = WebApplication.CreateBuilder(args);
 
 #region Swagger
@@ -204,7 +206,7 @@ app.UseSwaggerUI();
 
 app.Run();
 
-void configureLogging(){
+void ConfigureLogging(){
     var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
     var configuration = new ConfigurationBuilder()
         .AddJsonFile("appsettings.json",optional:false,reloadOnChange:true).Build();

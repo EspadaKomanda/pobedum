@@ -34,7 +34,7 @@ public class VideoGenerationCommunicator
 
     private void ConfigurePaths()
     {
-        var authPaths = _configuration.GetSection("VideoServicePaths");
+        var authPaths = _configuration.GetSection("VideoGenerationServicePaths");
         foreach (var path in authPaths.GetChildren())
         {
             _paths.Add(path.Key,path.Value);

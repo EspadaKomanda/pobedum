@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LetterService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("/api/v1/[controller]")]
 public class LetterController : ControllerBase
 {
     #region Fields
