@@ -62,12 +62,13 @@ class AudioService:
             self.logger.error("Audio generation failed: %s", e)
             raise
 
-    def process_message(self, message: Dict[str, Any], _):
+    def process_message(self, message: Dict[str, Any]):
         """
         Processes incoming Kafka messages to generate audio files.
         """
         try:
-            if not message.get('action') == 'StartAudioGeneration':
+            if not message.get('Action') == 'StartAudioGeneration':
+                self.logger.error("Unknown Action '%s'", message.get('Action'))
                 return
 
             pipeline_guid = message['TaskId']

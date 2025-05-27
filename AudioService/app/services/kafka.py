@@ -1,6 +1,7 @@
 """
 Kafka service module providing producer and consumer clients for interacting with Apache Kafka.
 """
+import json
 import logging
 import threading
 from confluent_kafka import Producer, Consumer, KafkaError, KafkaException
@@ -271,19 +272,22 @@ class ThreadedKafkaConsumer(threading.Thread):
                     self.logger.debug("Received message from %s [%s]", msg.topic(), msg.partition())
 
                     if self.message_callback:
-                        self.message_callback(value, msg)
+
+                        decoded_payload = json.loads(value.decode('utf-8'))
+                        self.logger.debug("Passing value %s to the message_callback method...", decoded_payload)
+                        self.message_callback(decoded_payload)
 
                     self.consumer.commit(msg)
                 except KafkaException as e:
-                    self.logger.error("Kafka error processing message: %s", e)
+                    self.logger.exception("Kafka error processing message: %s", e)
                     if self.error_callback:
                         self.error_callback(e)
                 except (ValueError, TypeError) as e:
-                    self.logger.error("Data deserialization failed: %s", e)
+                    self.logger.exception("Data deserialization failed: %s", e)
                     if self.error_callback:
                         self.error_callback(e)
                 except Exception as e:  # pylint: disable=W0718
-                    self.logger.critical("Unexpected processing error: %s", e)
+                    self.logger.exception("Unexpected processing error: %s", e)
                     if self.error_callback:
                         self.error_callback(e)
 

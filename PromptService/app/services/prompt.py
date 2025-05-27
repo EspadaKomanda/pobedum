@@ -85,14 +85,12 @@ class PromptService:
             response = ""
             if GEN_MODE == "plug":
 
-                response = json.loads(
-                    "["
-                        "{'text': 'Hello people1', 'photo_prompt': 'photo description', 'voice': 'male'},"
-                        "{'text': 'Hello people2', 'photo_prompt': 'photo description', 'voice': 'male'},"
-                        "{'text': 'Hello people3', 'photo_prompt': 'photo description', 'voice': 'male'},"
-                        "{'text': 'Hello people4', 'photo_prompt': 'photo description', 'voice': 'male'}"
-                    "]"
-                )
+                response = [
+                    '[{"text": "Hello people1", "photo_prompt": "photo description", "voice": "male"},'
+                    '{"text": "Hello people2", "photo_prompt": "photo description", "voice": "male"},'
+                    '{"text": "Hello people3", "photo_prompt": "photo description", "voice": "male"},'
+                    '{"text": "Hello people4", "photo_prompt": "photo description", "voice": "male"}]'
+                ][0]
 
             else:
 
@@ -138,20 +136,20 @@ class PromptService:
 
     def _request_start_audio(self, pipeline_guid: str, video_guid: str):
         """Notifies AudioService to start processing via Kafka."""
-        message = {
+        message = json.dumps({
             "Action": "StartAudioGeneration", # TODO: make sure action is the same in audio service
             "TaskId": pipeline_guid,
             "VideoId": video_guid
-        }
+        })
         self.producer.send_message("audio_requests", message)
 
     def _request_start_photo(self, pipeline_guid: str, video_guid: str):
         """Notifies PhotoService to start processing via Kafka."""
-        message = {
+        message = json.dumps({
             "Action": "StartPhotoGeneration", # TODO: make sure action is the same in photo service
             "TaskId": pipeline_guid,
             "VideoId": video_guid
-        }
+        })
         self.producer.send_message("photo_requests", message)
 
     def process_message(self, message: Dict[str, Any]):
@@ -163,10 +161,10 @@ class PromptService:
             
             self.producer.send_message(
                 "status_update_requests",
-                {
+                json.dumps({
                     "TaskId": pipeline_guid,
                     "Status": 1 # Analyze Letter
-                }
+                })
             )
 
             # Step 1: Moderate prompt
@@ -174,10 +172,10 @@ class PromptService:
                 self.logger.warning("Prompt rejected for pipeline %s", pipeline_guid)
                 self.producer.send_message(
                     "status_update_requests",
-                    {
+                    json.dumps({
                         "TaskId": pipeline_guid,
                         "Status": 10 # Cancelled (rejected) # XXX: use a better code
-                    }
+                    })
                 )
                 return
             
@@ -191,23 +189,32 @@ class PromptService:
             # Notify pipeline of success
             self.producer.send_message(
                 "status_update_requests",
-                {
+                json.dumps({
                     "TaskId": pipeline_guid,
                     "Status": 8 # Success
-                }
+                })
             )
             
         except KeyError as e:
             self.logger.error("Invalid message format: missing %s", e)
+            self.producer.send_message(
+                "status_update_requests",
+                json.dumps({
+                    "TaskId": pipeline_guid,
+                    "Status": 11 # Error
+                })
+            )
+            return
         except Exception as e:
             self.logger.error("Failed to process message: %s", e)
             self.producer.send_message(
                 "status_update_requests",
-                {
+                json.dumps({
                     "TaskId": pipeline_guid,
                     "Status": 11 # Error
-                }
+                })
             )
+            raise
 
     def start(self):
         """Starts the Kafka consumer to begin processing messages."""
