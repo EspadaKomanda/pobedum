@@ -157,9 +157,9 @@ class PromptService:
     def process_message(self, message: Dict[str, Any]):
         """Processes incoming Kafka messages from the pipeline."""
         try:
-            pipeline_guid = message["pipeline_guid"]
-            video_guid = message["video_guid"]
-            user_prompt = message["prompt"]
+            pipeline_guid = message["PipelineId"]
+            video_guid = message["VideoId"]
+            user_prompt = message["Text"]
             
             self.producer.send_message(
                 "status_update_requests",
