@@ -389,8 +389,8 @@ class MergeService:
             video_clip = VideoClip(make_frame, duration=audio_durations[i])
             video_clip.fps = fps
 
-            # 5. Создаем текстовый слой
-            if (enableSubTitles):
+            # TODO: 5. Создаем текстовый слой
+            if (False and enableSubTitles):
                 text_clip = self._create_text_overlay_bottom(
                     display_texts[i],
                     duration=audio_durations[i],
@@ -410,7 +410,7 @@ class MergeService:
                 final_clip = final_clip.set_audio(audio_clip)
 
             # 8. Сохраняем результат
-            out_path = f"{uuid.uuid4()}.mp4"
+            out_path = f"/tmp/{uuid.uuid4()}.mp4"
             final_clip.write_videofile(
                 out_path,
                 fps=fps,
@@ -421,14 +421,17 @@ class MergeService:
                 audio_codec='aac',
                 audio_bitrate='192k'
             )
-
-        # Удаляем временные файлы
-        for f in video_files:
-            os.remove(f)
-            # 9. Удаляем временные файлы
-            os.remove(audio_paths[i])
-
             video_files.append(out_path)
+
+        self.logger.info("Finished creating video parts for %s", task_id)
+        # TODO: Удаляем временные файлы
+
+        #for f in video_files:
+            # os.remove(f)
+            # 9. Удаляем временные файлы
+            # os.remove(audio_paths[i])
+
+            #video_files.append(out_path)
 
         self.producer.send_message(
             topic="status_update_requests",
@@ -442,14 +445,17 @@ class MergeService:
         for i, f in enumerate(video_files, 1):
             print(f"{i}. {f}")
 
-        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=True) as temp_file:
+        # with tempfile.NamedTemporaryFile(suffix='.mp4', delete=True) as temp_file:
 
-            # Get the name of the temporary file
-            temp_file_name = temp_file.name
-            
-            # Call your function to combine videos and save the output to the temporary file
-            output_file_path = self._combine_videos(video_files, temp_file_name, fadingType, 1.0)
-
+        #     # Get the name of the temporary file
+        #     temp_file_name = temp_file.name
+        #     
+        #     # Call your function to combine videos and save the output to the temporary file
+        #     output_file_path = self._combine_videos(video_files, temp_file_name, fadingType, 1.0)
+        
+        temp_file_name = f"/tmp/{uuid.uuid4()}.mp4"
+        output_file_path = self._combine_videos(video_files, temp_file_name, fadingType, 1.0)
+        
         self.producer.send_message(
             topic="status_update_requests",
             value={
@@ -546,7 +552,7 @@ class MergeService:
             )
 
         except Exception as e:
-            self.logger.error("Video generation failed: %s", e)
+            self.logger.exception("Video generation failed: %s", e)
             self.producer.send_message(
                 topic="status_update_requests",
                 value={

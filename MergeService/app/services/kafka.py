@@ -112,7 +112,7 @@ class KafkaConsumerClient:
             'enable.auto.commit': False,
             'message.send.max.retries': 10,
             'retry.backoff.ms': 10000,
-            'max.poll.interval.ms': 60000,
+            'max.poll.interval.ms': 600000,
         }
         conf.update(configs)
         self.consumer = Consumer(conf)
@@ -234,7 +234,7 @@ class ThreadedKafkaConsumer(threading.Thread):
             'group.id': group_id,
             'auto.offset.reset': 'earliest',
             'enable.auto.commit': False,
-            'max.poll.interval.ms': 60000,
+            'max.poll.interval.ms': 600000,
             'message.send.max.retries': 3,
             'retry.backoff.ms': 10000
         }
