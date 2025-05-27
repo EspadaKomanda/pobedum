@@ -89,10 +89,8 @@ class PromptService:
             if GEN_MODE == "plug":
 
                 response = [
-                    '[{"text": "Hello people1", "photo_prompt": "photo description", "voice": "john"},'
-                    '{"text": "Hello people2", "photo_prompt": "photo description", "voice": "john"},'
-                    '{"text": "Hello people3", "photo_prompt": "photo description", "voice": "john"},'
-                    '{"text": "Hello people4", "photo_prompt": "photo description", "voice": "john"}]'
+                    '[{"text": "Hello people1", "photo_prompt": "photo description", "voice": "kirill"},'
+                    '{"text": "Hello people4", "photo_prompt": "photo description", "voice": "dasha"}]'
                 ][0]
 
             else:

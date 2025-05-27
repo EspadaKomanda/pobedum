@@ -2,6 +2,7 @@
 Service for generating photos with ChatGPT DALL·E from photo prompts.
 """
 import json
+import time
 import logging
 import tempfile
 import os
@@ -97,6 +98,7 @@ class PhotoService:
                 )
                 os.unlink(temp_image_path)
                 photo_files.append(s3_key)
+                time.sleep(5)
 
             # Create and upload photo manifest
             manifest = {"photo_files": photo_files}
