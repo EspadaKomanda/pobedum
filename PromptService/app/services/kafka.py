@@ -279,15 +279,15 @@ class ThreadedKafkaConsumer(threading.Thread):
 
                     self.consumer.commit(msg)
                 except KafkaException as e:
-                    self.logger.error("Kafka error processing message: %s", e)
+                    self.logger.exception("Kafka error processing message: %s", e)
                     if self.error_callback:
                         self.error_callback(e)
                 except (ValueError, TypeError) as e:
-                    self.logger.error("Data deserialization failed: %s", e)
+                    self.logger.exception("Data deserialization failed: %s", e)
                     if self.error_callback:
                         self.error_callback(e)
                 except Exception as e:  # pylint: disable=W0718
-                    self.logger.critical("Unexpected processing error: %s", e)
+                    self.logger.exception("Unexpected processing error: %s", e)
                     if self.error_callback:
                         self.error_callback(e)
 
