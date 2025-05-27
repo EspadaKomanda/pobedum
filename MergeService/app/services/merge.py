@@ -26,7 +26,8 @@ from app.config import (
     KAFKA_BROKERS,
     REDIS_HOST,
     REDIS_PORT,
-    REDIS_DB
+    REDIS_DB,
+    REDIS_PASSWORD
 )
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class MergeService:
             host=REDIS_HOST,
             port=REDIS_PORT,
             db=REDIS_DB,
+            password=REDIS_PASSWORD,
             decode_responses=True
         )
         
@@ -572,7 +574,7 @@ class MergeService:
             self.redis.delete(f"{pipeline_guid}:audio")
             self.redis.delete(f"{pipeline_guid}:photos")
 
-    def process_message(self, message: Dict[str, Any], _):
+    def process_message(self, message: Dict[str, Any]):
         """Process incoming merge requests."""
         try:
             pipeline_guid = message['TaskId']
@@ -581,13 +583,15 @@ class MergeService:
             status = message['Status']
 
             # This logic isn't particularly good but it's alright for now
-            if status == 'audio_finished':
+            if status == 'audio_completed':
                 status_type = 'audio'
-            elif status == 'photos_finihsed':
+            elif status == 'photos_completed':
                 status_type = 'photos'
             else:
                 self.logger.error("Incorrect status type: %s", status)
                 return
+
+            self.logger.info("%s is ready for %s, will memorize in Redis", status_type, pipeline_guid)
 
             # Update completion status
             self.redis.set(f"{pipeline_guid}:{status_type}", "completed")

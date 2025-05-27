@@ -116,11 +116,12 @@ class PhotoService:
             self.logger.error("Photo generation failed: %s", e)
             raise
 
-    def process_message(self, message: Dict[str, Any], _):
+    def process_message(self, message: Dict[str, Any]):
         """Processes incoming Kafka messages to generate images."""
         pipeline_guid = None
         try:
-            if message.get('action') != 'StartPhotoGeneration':
+            if message.get('Action') != 'StartPhotoGeneration':
+                self.logger.error("Unknown Action '%s'", message.get('Action'))
                 return
 
             pipeline_guid = message['TaskId']
