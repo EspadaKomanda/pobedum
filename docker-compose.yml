@@ -19,9 +19,22 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "baeldung:1:1"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - app-network
   
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8080:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+        - app-network
+    volumes:
+      - ./kafka-ui.yml:/etc/kafkaui/dynamic_config.yaml
+
   api-gateway:
     build: ApiGatewayService
     hostname: api-gateway
