@@ -61,11 +61,7 @@ public class VideoGenerationController : ControllerBase
     {
         try
         {
-            return Ok( new BasicResponse()
-            {
-                Message = _pipelineService.GetQueuePosition(taskId).ToString(),
-                Code = 200
-            });
+            return Ok( _pipelineService.GetQueuePosition(taskId).ToString());
         }
         catch (Exception e)
         {

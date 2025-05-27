@@ -175,6 +175,12 @@ docker-compose exec backend dotnet run --init
 ```bash
 docker-compose ps
 ```
+6. Создание топиков в кафке:
+```
+generation_requests (partitions count = 3, replication factor = 1)
+status_update_requests (partitions count = 3, replication factor = 1)
+```
+
 
 Система будет доступна:
 - Веб-интерфейс: http://localhost:3000

@@ -1,3 +1,4 @@
+using ApiGatewayService.Models.Microservices.VideoService;
 using ApiGatewayService.Models.Microservices.VideoService.DTOs;
 using ApiGatewayService.Utils;
 
@@ -52,11 +53,11 @@ public class VideosCommunicator
         }
     }
     
-    public async Task<(List<VideoDTO> Videos, int TotalCount)> SendGetVideoByUserId(Guid userId, int page, int size)
+    public async Task<GetVideosByUserIdResponse> SendGetVideoByUserId(Guid userId, int page, int size)
     {
         try
         {
-            return await _microservicesHttpClient.GetAsync<(List<VideoDTO> Videos, int TotalCount)>($"{_paths["GetVideoByUserId"]}/{userId}?page={page}?size={size}",
+            return await _microservicesHttpClient.GetAsync<GetVideosByUserIdResponse>($"{_paths["GetVideoByUserId"]}/{userId}?page={page}?size={size}",
                 new Dictionary<string, string>());
         }
         catch (Exception e)

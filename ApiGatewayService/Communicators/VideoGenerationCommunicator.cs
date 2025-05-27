@@ -55,12 +55,12 @@ public class VideoGenerationCommunicator
         }
     }
     
-    public async Task<BasicResponse> SendGetQueuePositionRequest(Guid taskId)
+    public async Task<int> SendGetQueuePositionRequest(Guid taskId)
     {
         try
         {
             Dictionary<string, string> headers = new Dictionary<string, string>();
-            return await _microservicesHttpClient.GetAsync<BasicResponse>($"{_paths["GetQueuePosition"]}/{taskId}",headers);
+            return await _microservicesHttpClient.GetAsync<int>($"{_paths["GetQueuePosition"]}/{taskId}",headers);
         }
         catch (Exception e)
         {

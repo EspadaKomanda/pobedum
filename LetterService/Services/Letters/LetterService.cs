@@ -58,7 +58,7 @@ public class LetterService : ILetterService
                     Content = entityEntry.Entity.Content,
                     Id = entityEntry.Entity.Id,
                     Date = entityEntry.Entity.Date,
-                    IsOwned = createLetterRequest.Author.Id == entityEntry.Entity.AuthorId,
+                    IsOwn = createLetterRequest.Author.Id == entityEntry.Entity.AuthorId,
                     IsLong = entityEntry.Entity.IsLong,
                     IsFavourite =
                         await _favouritesService.IsFavourite(createLetterRequest.Author, entityEntry.Entity.Id)
@@ -91,7 +91,7 @@ public class LetterService : ILetterService
                 IsLong = letter.IsLong,
                 Date = letter.Date,
                 IsFavourite = await _favouritesService.IsFavourite(user,letterId),
-                IsOwned = letter.AuthorId == user.Id
+                IsOwn = letter.AuthorId == user.Id
             };
            
         }
@@ -116,7 +116,7 @@ public class LetterService : ILetterService
                 Id = letter.Id,
                 IsLong = letter.IsLong,
                 IsFavourite = false,
-                IsOwned = false,
+                IsOwn = false,
                 Date = letter.Date
             };
         }
@@ -147,17 +147,16 @@ public class LetterService : ILetterService
             IsLong = letter.IsLong,
             Date = letter.Date,
             IsFavourite =  _favouritesService.IsFavourite(user, letter.Id).Result,
-            IsOwned = letter.AuthorId == user.Id
+            IsOwn = letter.AuthorId == user.Id
         }).ToList();
         
         return new GetLettersRequest()
         {
             
             Letters = result,
-            TotalCount = result.Count
+            TotalCount = (int)Math.Ceiling(Convert.ToDouble(query.Count()) / pageSize)
             
         };
-       
     }
 
     public async Task<GetLettersRequest> GetAllLettersAsync(int pageNumber = 1, int pageSize = 10)
@@ -180,7 +179,7 @@ public class LetterService : ILetterService
             IsLong = letter.IsLong,
             IsFavourite = false,
             Date = letter.Date,
-            IsOwned = false
+            IsOwn = false
         }).ToList();
         
         return new GetLettersRequest()

@@ -2,7 +2,7 @@ namespace ApiGatewayService.Models.Microservices.PipelineService.Responses;
 
 public class GetStatusResponse
 {
-    public GenerationStatuses Status { get; set; }
+    public string Status { get; set; }
     public int Progres { get; set; }
     public int Eta { get; set; }
 }

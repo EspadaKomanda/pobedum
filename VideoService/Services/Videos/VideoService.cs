@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VideoService.Database.Repositories;
+using VideoService.Models;
 using VideoService.Models.Database;
 using VideoService.Models.DTOs;
 using VideoService.Models.Internal;
@@ -61,7 +62,7 @@ public class VideoService : IVideoService
         }
     }
 
-    public async Task<(List<VideoDTO> Videos, int TotalCount)> GetVideosByUserId(User user, int page, int size)
+    public async Task<GetVideosByUserIdResponse> GetVideosByUserId(User user, int page, int size)
     {
         
         var query = _unitOfWork.VideoRepository.Get();
@@ -85,7 +86,17 @@ public class VideoService : IVideoService
                 videoInformation.BucketName).Result
         }).ToList();
         
-        return (result, totalItems);
+        return new GetVideosByUserIdResponse()
+        {
+            content = result,
+            page = new PageInfo()
+            {
+                size = size,
+                number = page,
+                totalElements = result.Count,
+                totalPages = (int)Math.Ceiling(Convert.ToDouble(totalItems) / size)
+            }
+        };
     }
 
     public async Task<List<VideoDTO>> GetVideosByLetterId(Guid letterId)

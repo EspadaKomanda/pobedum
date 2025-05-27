@@ -152,11 +152,12 @@ public class PipelineService : IPipelineService
         {
             var pipelineItem = await _unitOfWork.PipelineRepository.Get().FirstOrDefaultAsync(x => x.VideoId ==taskId);
             int progres = 0;
+            string status = "";
             int eta = 0;
             if (pipelineItem.EndTime != null && pipelineItem.BeginTime != null)
             {
                 TimeSpan duration = pipelineItem.EndTime.Value - pipelineItem.BeginTime;
-                eta = Convert.ToInt32(duration.TotalSeconds); // or TotalMilliseconds/TotalMinutes
+                eta = Convert.ToInt32(duration.TotalSeconds); 
             }
             else
             {
@@ -167,42 +168,53 @@ public class PipelineService : IPipelineService
             {
                 case GenerationStatuses.SUCCESS:
                     progres = 100;
+                    status = "SUCCESS";
                     break;
                 case GenerationStatuses.VALIDATION:
                     progres = 0;
+                    status = "VALIDATION";  
                     break;
                 case GenerationStatuses.ANALYZE_LETTER:
                     progres = 1;
+                    status = "ANALYZE_LETTER";
                     break;
                 case GenerationStatuses.CREATING_IMAGES:
                     progres = 5;
+                    status = "CREATING_IMAGES";
                     break;
                 case GenerationStatuses.CREATING_AUDIO:
                     progres = 55;
+                    status = "CREATING_AUDIO";
                     break;
                 case GenerationStatuses.MAKING_VIDEOS:
                     progres = 58;
+                    status = "MAKING_VIDEOS";
                     break;
                 case GenerationStatuses.ADD_SOUND:
                     progres = 78;
+                    status = "ADD_SOUND";
                     break;
                 case GenerationStatuses.MERGE_VIDEOS:
                     progres = 89;
+                    status = "MERGE_VIDEOS";
                     break;
                 case GenerationStatuses.FINAL_PROCESS:
                     progres = 99;
+                    status = "FINAL_PROCESS";
                     break;
                 case GenerationStatuses.WAITING:
                     progres = 0;
+                    status = "WAITING";
                     break;
                 case GenerationStatuses.ERROR:
                     progres = 0;
+                    status = "ERROR";
                     break;
             }
 
             return new GetStatusResponse()
             {
-                Status = pipelineItem.Status,
+                Status = status,
                 Eta = eta,
                 Progres = progres
             };
@@ -223,7 +235,7 @@ public class PipelineService : IPipelineService
             return -1;
         }
 
-        return _pipeline.IndexOf(pipelineItem.Id);
+        return _pipeline.IndexOf(pipelineItem.Id) + 1;
     }
 
     #endregion

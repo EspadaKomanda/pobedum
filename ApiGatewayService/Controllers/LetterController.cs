@@ -43,15 +43,25 @@ public class LetterController : ControllerBase
             string userRoleClaim = "";
             foreach (var claim in User.Claims)
             {
-                if(claim.Type==ClaimTypes.Name)
+                if (claim.Type == ClaimTypes.Name)
                     userIdClaim = Guid.Parse(claim.Value);
-                if(claim.Type==ClaimTypes.Role)
-                    userRoleClaim = claim.Value;   
+                if (claim.Type == ClaimTypes.Role)
+                    userRoleClaim = claim.Value;
             }
 
             var result = await _lettersCommunicator.SendGetAllLettersRequest(userIdClaim, userRoleClaim, page, size);
-            
-            return Ok(result);
+
+            return Ok(new
+            {
+                content = result.Letters,
+                page = new
+                {
+                    size = size,
+                    number = page,
+                    totalElements = result.Letters.Count,
+                    totalPages = result.TotalCount
+                }
+            });
         }
         catch (Exception e)
         {
