@@ -1,3 +1,5 @@
+using Amazon;
+using Amazon.S3;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -80,7 +82,18 @@ builder.Services.AddScoped(typeof(GenericRepository<>));
 builder.Services.AddScoped<UnitOfWork>(sp => new UnitOfWork(sp.GetRequiredService<ApplicationContext>()));
 
 #endregion
+var s3Settings =  builder.Configuration.GetSection("S3Settings");
+builder.Services.AddSingleton<IAmazonS3>(sc =>
+{
+    var awsS3Config = new AmazonS3Config
+    {
+        RegionEndpoint = RegionEndpoint.USEast1,
+        ServiceURL = s3Settings["ServiceUrl"],
+        ForcePathStyle = true
+    };
 
+    return new AmazonS3Client("minioadmin", "minioadmin", awsS3Config);
+});
 builder.Services.AddScoped<IS3StorageService, S3StorageService>();
 builder.Services.AddScoped<IVideoService, VideoService.Services.Videos.VideoService>();
 
