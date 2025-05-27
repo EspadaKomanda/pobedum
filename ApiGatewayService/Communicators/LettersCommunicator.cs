@@ -47,7 +47,7 @@ public class LettersCommunicator
         try
         {
             Dictionary<string, string> headers = new Dictionary<string, string>();
-            if (userId != null && userRole != null)
+            if (userId != Guid.Empty && userRole != "")
             {  
                 headers.Add("userId",userId.ToString());
                 headers.Add("userRole",userRole);

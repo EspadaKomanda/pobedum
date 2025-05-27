@@ -4,6 +4,8 @@ using ApiGatewayService.Communicators;
 using ApiGatewayService.Exceptions.HttpClient;
 using ApiGatewayService.Utils;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
@@ -29,13 +31,17 @@ public class MicroservicesAuthentificationHandler : AuthenticationHandler<Micros
         _logger = logger.CreateLogger<MicroservicesAuthentificationHandler>();
         _authCommunicator = authCommunicator;
     }
-
+   
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
 
         try
         {
-
+            if (!Request.Headers.ContainsKey("Authorization"))
+            {
+                return AuthenticateResult.NoResult();
+            }
+            
             var token = Request.Headers["Authorization"].ToString();
             Console.WriteLine(token);
             var authResult = await _authCommunicator.HandleInternalAuth(token);

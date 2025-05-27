@@ -83,6 +83,22 @@ using Serilog.Exceptions;
         builder.Services.AddOpenApi();
         builder.Services.AddSerilog();
         
+        #region CORS
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("ProductionPolicy",
+                policy =>
+                {
+                    policy.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+    
+        });
+
+        #endregion
+        
         var app = builder.Build();
 
         if (app.Environment.IsDevelopment())
@@ -91,7 +107,7 @@ using Serilog.Exceptions;
         }
 
         app.UseHttpsRedirection();
-
+        app.UseCors("ProductionPolicy");
         app.UseSwagger();
         app.UseSwaggerUI();
         

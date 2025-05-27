@@ -13,18 +13,18 @@ namespace ApiGatewayService.Controllers;
 [ApiController]
 [Route("api/v1/[controller]")]
 [Authorize]
-public class LetterController : ControllerBase
+public class LettersController : ControllerBase
 {
     #region Services
 
     private readonly LettersCommunicator _lettersCommunicator;
-    private readonly ILogger<LetterController> _logger;
+    private readonly ILogger<LettersController> _logger;
 
     #endregion
 
     #region Constructor
 
-    public LetterController(LettersCommunicator lettersCommunicator, ILogger<LetterController> logger)
+    public LettersController(LettersCommunicator lettersCommunicator, ILogger<LettersController> logger)
     {
         _lettersCommunicator = lettersCommunicator;
         _logger = logger;
@@ -35,6 +35,7 @@ public class LetterController : ControllerBase
     #region Actions
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllLetters([FromQuery] int page, [FromQuery] int size)
     {
         try

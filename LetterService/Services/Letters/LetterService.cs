@@ -134,7 +134,7 @@ public class LetterService : ILetterService
         var totalItems = await query.CountAsync();
     
         var pagedLetters = await query
-            .Skip((pageNumber - 1) * pageSize)
+            .Skip(pageNumber * pageSize)
             .Take(pageSize)
             .ToListAsync();
         
@@ -166,7 +166,7 @@ public class LetterService : ILetterService
         var totalItems = await query.CountAsync();
     
         var pagedLetters = await query
-            .Skip((pageNumber - 1) * pageSize)
+            .Skip(pageNumber  * pageSize)
             .Take(pageSize)
             .ToListAsync();
        

@@ -70,7 +70,7 @@ public class VideoService : IVideoService
         var totalItems = await query.CountAsync();
     
         var pagedVideos = await query
-            .Skip((page - 1) * size)
+            .Skip(page * size)
             .Take(size)
             .ToListAsync();
        
