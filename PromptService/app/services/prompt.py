@@ -11,7 +11,7 @@ from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
 from app.services.openai import OpenAIService, APIException
 from app.services.s3 import S3Service
 
-from app.config import DEEPSEEK_API_KEY, GEN_MODE
+from app.config import DEEPSEEK_API_KEY, GEN_MODE, PROMPT_MODERATION, PROMPT_GENERATION
 
 logger = logging.getLogger(__name__)
 
@@ -44,13 +44,15 @@ class PromptService:
         if GEN_MODE == "plug":
             return True
 
-        # TODO: update moderation prompt
-        moderation_instruction = (
-            "Analyze the following prompt for inappropriate content (violence, hate speech, explicit material). "
-            "Respond with a JSON object containing one boolean field 'ok'. Example: {'ok': true}.\n\n"
-            f"Prompt: {prompt}"
-        )
+        # moderation_instruction = (
+        #     "Analyze the following prompt for inappropriate content (violence, hate speech, explicit material). "
+        #     "Respond with a JSON object containing one boolean field 'ok'. Example: {'ok': true}.\n\n"
+        #     f"Prompt: {prompt}"
+        # )
         
+        moderation_instruction = PROMPT_MODERATION.replace("%s", prompt)
+        self.logger.debug("Using the following generation instruction: %s", moderation_instruction)
+
         try:
             response = self.openai_service.chat_completion(
                 prompt=moderation_instruction,
@@ -72,14 +74,15 @@ class PromptService:
         Generates structured data (paragraphs + image prompts) and saves to S3.
         Returns the generated JSON string.
         """
-        # TODO: update image generation prompt
-        generation_instruction = (
-            "Split the story into paragraphs. For each, provide 'text' for audio and 'photo_prompt' for image generation. "
-            "Also provide the voice (male is kirill and female is dasha) which should be used to voice the paragraph in field 'voice'."
-                "Respond with a JSON array of objects. Example: [{'text': '...', 'photo_prompt': '...', 'voice': 'kirill'}]\n\n"
-            f"Story: {source_prompt}"
-        )
+        # generation_instruction = (
+        #     "Split the story into paragraphs. For each, provide 'text' for audio and 'photo_prompt' for image generation. "
+        #     "Also provide the voice (male is kirill and female is dasha) which should be used to voice the paragraph in field 'voice'."
+        #         "Respond with a JSON array of objects. Example: [{'text': '...', 'photo_prompt': '...', 'voice': 'kirill'}]\n\n"
+        #     f"Story: {source_prompt}"
+        # )
         
+        generation_instruction = PROMPT_GENERATION.replace("%s", source_prompt)
+        self.logger.debug("Using the following generation instruction: %s", generation_instruction)
         try:
             
             response = ""

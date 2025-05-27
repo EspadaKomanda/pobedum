@@ -71,3 +71,9 @@ if YANDEX_SPEECHKIT_API_KEY is None:
 ENV_PROXY=getenv("ENV_PROXY") or None
 
 GEN_MODE=getenv("GEN_MODE") or "prod"
+
+PROMPT_MODERATION=getenv("PROMPT_MODERATION")
+PROMPT_GENERATION=getenv("PROMPT_GENERATION")
+
+if PROMPT_MODERATION is None or PROMPT_GENERATION is None:
+    raise SystemError("PROMPT_GENERATION or PROMPT_MODERATION have not been configured.")

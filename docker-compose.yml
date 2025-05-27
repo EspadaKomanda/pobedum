@@ -149,6 +149,8 @@ services:
       - YANDEX_SPEECHKIT_API_KEY=${YANDEX_SPEECHKIT_API_KEY}
       - ENV_PROXY=${ENV_PROXY}
       - GEN_MODE=prod #${GEN_MODE}
+      - PROMPT_MODERATION=${PROMPT_MODERATION}
+      - PROMPT_GENERATION=${PROMPT_GENERATION}
     networks:
       - app-network
 
