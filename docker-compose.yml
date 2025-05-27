@@ -148,7 +148,7 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - YANDEX_SPEECHKIT_API_KEY=${YANDEX_SPEECHKIT_API_KEY}
       - ENV_PROXY=${ENV_PROXY}
-      - GEN_MODE=${GEN_MODE}
+      - GEN_MODE=prod #${GEN_MODE}
     networks:
       - app-network
 
@@ -173,7 +173,7 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - YANDEX_SPEECHKIT_API_KEY=${YANDEX_SPEECHKIT_API_KEY}
       - ENV_PROXY=${ENV_PROXY}
-      - GEN_MODE=${GEN_MODE}
+      - GEN_MODE=prod #${GEN_MODE}
     networks:
       - app-network
 

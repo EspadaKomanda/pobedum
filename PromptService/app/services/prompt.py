@@ -58,7 +58,7 @@ class PromptService:
                 temperature=0.0,
                 max_tokens=50
             )
-            result = json.loads(response)
+            result = json.loads(response.replace("```json", "").replace("```", ""))
             return result.get('ok', False)
         except json.JSONDecodeError:
             self.logger.error("Moderation response is not valid JSON")
@@ -75,8 +75,8 @@ class PromptService:
         # TODO: update image generation prompt
         generation_instruction = (
             "Split the story into paragraphs. For each, provide 'text' for audio and 'photo_prompt' for image generation. "
-            "Also provide the voice (male of female) which should be used to voice the paragraph in field 'voice'. "
-                "Respond with a JSON array of objects. Example: [{'text': '...', 'photo_prompt': '...', 'voice': 'male'}]\n\n"
+            "Also provide the voice (male is kirill and female is dasha) which should be used to voice the paragraph in field 'voice'."
+                "Respond with a JSON array of objects. Example: [{'text': '...', 'photo_prompt': '...', 'voice': 'kirill'}]\n\n"
             f"Story: {source_prompt}"
         )
         
@@ -86,10 +86,10 @@ class PromptService:
             if GEN_MODE == "plug":
 
                 response = [
-                    '[{"text": "Hello people1", "photo_prompt": "photo description", "voice": "male"},'
-                    '{"text": "Hello people2", "photo_prompt": "photo description", "voice": "male"},'
-                    '{"text": "Hello people3", "photo_prompt": "photo description", "voice": "male"},'
-                    '{"text": "Hello people4", "photo_prompt": "photo description", "voice": "male"}]'
+                    '[{"text": "Hello people1", "photo_prompt": "photo description", "voice": "john"},'
+                    '{"text": "Hello people2", "photo_prompt": "photo description", "voice": "john"},'
+                    '{"text": "Hello people3", "photo_prompt": "photo description", "voice": "john"},'
+                    '{"text": "Hello people4", "photo_prompt": "photo description", "voice": "john"}]'
                 ][0]
 
             else:
@@ -101,6 +101,7 @@ class PromptService:
                     max_tokens=1000
                 )
 
+            response = response.replace("```json", "").replace("```", "")
             paragraphs = json.loads(response)
             
             # Validate structure
