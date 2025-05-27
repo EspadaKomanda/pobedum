@@ -31,8 +31,6 @@ class YandexSpeechKitService:
     leveraging Yandex SpeechKit's capabilities for speech-to-text and text-to-speech conversions.
     """
 
-    # FIXME: Please, verify that this works, apparently saves an .xml file but not sure
-    # about the audio file
     def synthesize_to_s3(
         self, text: str, s3_bucket: str, s3_key: str, voice: str = "john"
     ) -> str:
@@ -55,7 +53,7 @@ class YandexSpeechKitService:
 
             if GEN_MODE == 'plug':
 
-                audio_url = "http://cloud.weirdcat.su/s/plug_sound/download/goofy-ahh-samsung.mp3"
+                audio_url = "http://cloud.weirdcat.su/s/audioplug2/download/radsar.wav"
                 response = requests.get(audio_url)
                 response.raise_for_status()  # Raise an error for bad responses
 
