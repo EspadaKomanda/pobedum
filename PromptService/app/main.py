@@ -21,6 +21,9 @@ async def lifespan(app: FastAPI):
     prompt_service = PromptService(
         kafka_bootstrap_servers=config.KAFKA_BROKERS
     )
+
+    controllers.prompt_service = prompt_service
+
     prompt_service.start()
     yield
     # Shutdown the PromptService gracefully

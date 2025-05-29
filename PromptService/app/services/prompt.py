@@ -6,10 +6,23 @@ import logging
 import tempfile
 import os
 from typing import Dict, Any
+import uuid
 
 from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
 from app.services.openai import OpenAIService, APIException
 from app.services.s3 import S3Service
+
+from app.objects.prompt_service.requests import (
+    CreatePromptRequest,
+    EditPromptRequest,
+    GetPromptRequest
+)
+
+from app.objects.prompt_service.responses import (
+    CreatePromptResponse,
+    EditPromptResponse,
+    GetPromptResponse
+)
 
 from app.config import DEEPSEEK_API_KEY, GEN_MODE, PROMPT_MODERATION, PROMPT_GENERATION
 
@@ -82,7 +95,6 @@ class PromptService:
         # )
         
         generation_instruction = PROMPT_GENERATION.replace("%s", source_prompt)
-        self.logger.debug("Using the following generation instruction: %s", generation_instruction)
         try:
             
             response = ""
@@ -95,6 +107,7 @@ class PromptService:
 
             else:
 
+                self.logger.debug("Using the following generation instruction: %s", generation_instruction)
                 response = self.openai_service.chat_completion(
                     prompt=generation_instruction,
                     model="deepseek-chat",
@@ -153,6 +166,18 @@ class PromptService:
             "VideoId": video_guid
         })
         self.producer.send_message("photo_requests", message)
+
+    def pregenerate_task(self, request: CreatePromptRequest) -> CreatePromptResponse:
+        """Pregenerates the prompt structure and creates a task"""
+        raise NotImplementedError
+
+    def edit_task(self, request: EditPromptRequest) -> EditPromptResponse:
+        """"""
+        raise NotImplementedError
+
+    def get_task(self, request: GetPromptRequest) -> GetPromptResponse:
+        """"""
+        raise NotImplementedError
 
     def process_message(self, message: Dict[str, Any]):
         """Processes incoming Kafka messages from the pipeline."""
