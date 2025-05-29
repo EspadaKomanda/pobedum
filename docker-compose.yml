@@ -25,7 +25,7 @@ services:
       KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      #KAFKA_CREATE_TOPICS: "generation_requests:3:1,status_update_requests:3:1,photo_requests:3:1,audio_requests:3:1,merge_requests:3:1"
+      # KAFKA_CREATE_TOPICS: "generation_requests:3:1,status_update_requests:3:1,photo_requests:3:1,audio_requests:3:1,merge_requests:3:1"
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - app-network
@@ -137,6 +137,8 @@ services:
       interval: 30s
       timeout: 1s
       retries: 3
+    ports:
+      - "8111:8000"
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -148,7 +150,7 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - YANDEX_SPEECHKIT_API_KEY=${YANDEX_SPEECHKIT_API_KEY}
       - ENV_PROXY=${ENV_PROXY}
-      - GEN_MODE=prod #${GEN_MODE}
+      - GEN_MODE=${GEN_MODE}
       - PROMPT_MODERATION=${PROMPT_MODERATION}
       - PROMPT_GENERATION=${PROMPT_GENERATION}
     networks:
@@ -175,7 +177,7 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - YANDEX_SPEECHKIT_API_KEY=${YANDEX_SPEECHKIT_API_KEY}
       - ENV_PROXY=${ENV_PROXY}
-      - GEN_MODE=prod #${GEN_MODE}
+      - GEN_MODE=${GEN_MODE}
     networks:
       - app-network
 
@@ -199,7 +201,7 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - YANDEX_SPEECHKIT_API_KEY=${YANDEX_SPEECHKIT_API_KEY}
       - ENV_PROXY=${ENV_PROXY}
-      - GEN_MODE=prod #${GEN_MODE}
+      - GEN_MODE=${GEN_MODE}
     networks:
       - app-network
 

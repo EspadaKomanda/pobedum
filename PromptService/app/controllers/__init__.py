@@ -3,6 +3,7 @@ Initializes all controllers.
 """
 import logging
 from fastapi import FastAPI
+from .prompt import PromptController
 
 def add_controllers(app: FastAPI):
     """Add all controllers to the app."""
@@ -15,3 +16,4 @@ def add_controllers(app: FastAPI):
         return "healthy"
 
     logging.info("Adding controllers...")
+    app.include_router(PromptController.create_router())
