@@ -52,7 +52,7 @@ public class VideoController : ControllerBase
     {
         try
         {
-            return Ok(await _videoService.GetVideosByUserId(new User(){Id = userId}, page, size));
+            return Ok(await _videoService.GetVideosByUserId(new User(){Id = userId, Role = ""}, page, size));
         }
         catch (Exception e)
         {
