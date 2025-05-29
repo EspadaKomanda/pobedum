@@ -137,7 +137,7 @@ public class PipelineService : IPipelineService
                 
                 }
 
-                if (pipelineItem.Status != GenerationStatuses.SUCCESS)
+                if (pipelineItem.Status < request.Status)
                 {
                     pipelineItem.Status = request.Status;
                     context.Letters.Update(pipelineItem);
