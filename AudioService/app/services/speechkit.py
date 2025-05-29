@@ -53,7 +53,7 @@ class YandexSpeechKitService:
 
             if GEN_MODE == 'plug':
 
-                audio_url = "http://cloud.weirdcat.su/s/audioplug2/download/radsar.wav"
+                audio_url = "http://cloud.weirdcat.su/s/oiojoijoij/download/maks_plug_sound.wav"
                 response = requests.get(audio_url)
                 response.raise_for_status()  # Raise an error for bad responses
 

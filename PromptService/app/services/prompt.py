@@ -326,14 +326,14 @@ class PromptService:
             self._request_start_photo(pipeline_guid, video_guid)
             
             # Notify pipeline of success
-            self.producer.send_message(
-                "status_update_requests",
-                json.dumps({
-                    "TaskId": pipeline_guid,
-                    "Status": 8 # Success
-                }),
-                method="updateStatus"
-            )
+            # self.producer.send_message(
+            #     "status_update_requests",
+            #     json.dumps({
+            #         "TaskId": pipeline_guid,
+            #         "Status": 8 # Success
+            #     }),
+            #     method="updateStatus"
+            # )
             
         except KeyError as e:
             self.logger.error("Invalid message format: missing %s", e)
