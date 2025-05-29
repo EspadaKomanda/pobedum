@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 from fastapi_controllers import Controller, get, post, put
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Query
 
 from app.controllers.depends import get_prompt_service
 from app.services.prompt import PromptService
@@ -29,10 +29,16 @@ class PromptController(Controller):
         Creates a prompt task and generates the structure.json file necessary
         for generation of audio and photo.
         """
-        result = service.pregenerate_task(data)
-        return result
+        response = None
 
-        raise NotImplementedError
+        try:
+            result = service.pregenerate_task(data)
+            return result
+        except Exception:
+            logger.exception("Error in service")
+            pass
+        finally:
+            raise HTTPException(status_code=500, detail="Something went terribly wrong")
 
     @put("/prompt", response_model=EditPromptResponse)
     def edit(self, data: EditPromptRequest, service: PromptService  = Depends(get_prompt_service)) -> EditPromptResponse:
@@ -40,11 +46,29 @@ class PromptController(Controller):
         Allows to modify the generated structure.json to add
         audio tags for Yandex Speechkit intonation.
         """
-        raise NotImplementedError
+        response = None
+
+        try:
+            result = service.edit_task(data)
+            return result
+        except Exception:
+            logger.exception("Error in service")
+            pass
+        finally:
+            raise HTTPException(status_code=500, detail="Something went terribly wrong")
 
     @get("/prompt", response_model=GetPromptRequest)
     def get(self, data: GetPromptRequest, service: PromptService  = Depends(get_prompt_service)) -> GetPromptResponse:
         """
         Allows to get the existing prompt structure via its task id.
         """
-        raise NotImplementedError
+        response = None
+
+        try:
+            result = service.get_task(data)
+            return result
+        except Exception:
+            logger.exception("Error in service")
+            pass
+        finally:
+            raise HTTPException(status_code=500, detail="Something went terribly wrong")
