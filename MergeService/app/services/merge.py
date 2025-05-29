@@ -341,7 +341,8 @@ class MergeService:
             value={
                 "Status": 5, # Add sound
                 "TaskId": task_id,
-            }
+            },
+            method="updateStatus"
         )
 
         if (enableAudio):
@@ -363,7 +364,8 @@ class MergeService:
             value={
                 "Status": 4, # Making videos
                 "TaskId": task_id,
-            }
+            },
+            method="updateStatus"
         )
 
         # Создаём видио
@@ -438,7 +440,8 @@ class MergeService:
             value={
                 "Status": 6, # Merge videos
                 "TaskId": task_id,
-            }
+            },
+            method="updateStatus"
         )
 
         # Склейка
@@ -461,7 +464,8 @@ class MergeService:
             value={
                 "Status": 7, # Final process
                 "TaskId": task_id,
-            }
+            },
+            method="updateStatus"
         ) 
 
         # Удаляем временные файлы
@@ -548,7 +552,8 @@ class MergeService:
                     "TaskId": pipeline_guid,
                     "Status": 7, # Success
                     "VideoId": video_guid
-                }
+                },
+                method="updateStatus"
             )
 
         except Exception as e:
@@ -558,7 +563,8 @@ class MergeService:
                 value={
                     "TaskId": pipeline_guid,
                     "Status": 11 # Error 
-                }
+                },
+                method="updateStatus"
             )
         finally:
             # Cleanup temporary files

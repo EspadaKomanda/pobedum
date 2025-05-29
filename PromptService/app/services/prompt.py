@@ -327,7 +327,8 @@ class PromptService:
                 json.dumps({
                     "TaskId": pipeline_guid,
                     "Status": 8 # Success
-                })
+                }),
+                method="updateStatus"
             )
             
         except KeyError as e:
@@ -337,7 +338,9 @@ class PromptService:
                 json.dumps({
                     "TaskId": pipeline_guid,
                     "Status": 11 # Error
-                })
+                }),
+                method="updateStatus"
+
             )
             return
         except Exception as e:
@@ -347,7 +350,8 @@ class PromptService:
                 json.dumps({
                     "TaskId": pipeline_guid,
                     "Status": 11 # Error
-                })
+                }),
+                method="updateStatus"
             )
             raise
 
