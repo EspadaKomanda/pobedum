@@ -233,39 +233,40 @@ class MergeService:
 
         return clip.fl(effect)
 
-    def _create_transition(self, clip1, clip2, transition_type='fade', transition_duration=1.0):
-        """Создание перехода между клипами"""
-        if transition_type == 'fade':
-            return concatenate_videoclips([
-                clip1.fx(fadeout, transition_duration),
-                clip2.fx(fadein, transition_duration)
-            ])
+    # def _create_transition(self, clip1, clip2, transition_type='fade', transition_duration=1.0):
+    #     """Создание перехода между клипами"""
+    #     if transition_type == 'fade':
+    #         return concatenate_videoclips([
+    #             clip1.fx(fadeout, transition_duration),
+    #             clip2.fx(fadein, transition_duration)
+    #         ])
 
-        elif transition_type == 'slide':
-            return CompositeVideoClip([
-                self._slide_out(clip1, transition_duration, 'left'),
-                self._slide_in(clip2, transition_duration, 'right')
-            ])
+    #     elif transition_type == 'slide':
+    #         return CompositeVideoClip([
+    #             self._slide_out(clip1, transition_duration, 'left'),
+    #             self._slide_in(clip2, transition_duration, 'right')
+    #         ])
 
-        elif transition_type == 'zoom':
-            def zoom_effect(t):
-                if t < transition_duration:
-                    zoom = 1.0 - (t/transition_duration)*0.3
-                    return clip1.resize(zoom).set_position('center')
-                else:
-                    zoom = 0.7 + ((t-transition_duration)/transition_duration)*0.3
-                    return clip2.resize(zoom).set_position('center')
-            return VideoClip(zoom_effect, duration=transition_duration*2)
+    #     elif transition_type == 'zoom':
+    #         def zoom_effect(t):
+    #             if t < transition_duration:
+    #                 zoom = 1.0 - (t/transition_duration)*0.3
+    #                 return clip1.resize(zoom).set_position('center')
+    #             else:
+    #                 zoom = 0.7 + ((t-transition_duration)/transition_duration)*0.3
+    #                 return clip2.resize(zoom).set_position('center')
+    #         return VideoClip(zoom_effect, duration=transition_duration*2)
 
-        elif transition_type in ['crossfade', 'dissolve']:
-            return CompositeVideoClip([
-                clip1.set_end(transition_duration),
-                clip2.set_start(0).fx(self._crossfadein, transition_duration)
-            ])
+    #     elif transition_type in ['crossfade', 'dissolve']:
+    #         return CompositeVideoClip([
+    #             clip1.set_end(transition_duration),
+    #             clip2.set_start(0).fx(self._crossfadein, transition_duration)
+    #         ])
 
-        else:  # простой переход без эффектов
-            return concatenate_videoclips([clip1, clip2])
+    #     else:  # простой переход без эффектов
+    #         return concatenate_videoclips([clip1, clip2])
 
+    # XXX : transition_type is actually hardcoded, please fix this
     def _combine_videos(self, video_paths, output_path, transition_type='fade', transition_duration=1.0):
         """Основная функция для склейки видео с переходами"""
         if not video_paths:
@@ -283,6 +284,8 @@ class MergeService:
         first_clip_end = max(0, clips[0].duration - transition_duration)
         final_clips.append(clips[0].subclip(0, first_clip_end))
 
+        transitions = ["fade", "zoom", "slide"]
+
         for i in range(1, len(clips)):
             # Части для перехода
             prev_clip_part = clips[i-1].subclip(
@@ -294,11 +297,12 @@ class MergeService:
                 min(transition_duration, clips[i].duration)
             )
 
+
             # Создаем переход
             transition = self._create_transition(
                 prev_clip_part,
                 next_clip_part,
-                transition_type,
+                transitions[i % 3],
                 transition_duration
             )
             final_clips.append(transition)
@@ -366,6 +370,105 @@ class MergeService:
             y_pos += line_height
 
         return ImageClip(np.array(img), duration=duration)
+
+    def _create_transition(self, clip1, clip2, transition_type='fade', transition_duration=1.0):
+        """Создание перехода между клипами"""
+        if transition_type == 'fade':
+            return concatenate_videoclips([
+                clip1.fx(fadeout, transition_duration),
+                clip2.fx(fadein, transition_duration)
+            ])
+
+        elif transition_type == 'slide':
+            # Функция для создания эффекта сдвига
+            def slide_effect(get_frame, t):
+                if t < transition_duration:
+                    # Первый клип уезжает влево, второй приезжает справа
+                    progress = t / transition_duration
+
+                    # Получаем кадры из обоих клипов
+                    frame1 = get_frame(t) if hasattr(clip1, 'get_frame') else clip1.get_frame(t)
+                    frame2 = clip2.get_frame(t) if hasattr(clip2, 'get_frame') else clip2.get_frame(t)
+
+                    # Вычисляем смещение в пикселях
+                    offset = int(progress * frame1.shape[1])
+
+                    # Создаем новый кадр
+                    new_frame = np.zeros_like(frame1)
+
+                    # Первый клип - левая часть (уезжает влево)
+                    new_frame[:, :frame1.shape[1]-offset] = frame1[:, offset:]
+
+                    # Второй клип - правая часть (приезжает справа)
+                    new_frame[:, frame1.shape[1]-offset:] = frame2[:, :offset]
+
+                    return new_frame
+                return get_frame(t)
+
+            # Создаем переходный клип
+            transition_clip = clip1.fl(slide_effect)
+            transition_clip = transition_clip.set_duration(transition_duration)
+
+            return transition_clip
+
+        elif transition_type == 'zoom':
+            # Размеры кадра
+            w, h = clip1.size
+
+            def make_frame(t):
+                # Прогресс перехода (0..1)
+                progress = min(1.0, t / transition_duration)
+
+                # Получаем кадры из обоих клипов
+                frame1 = clip1.get_frame(t)
+                frame2 = clip2.get_frame(t)
+
+                # Масштаб для первого клипа (уменьшение от 1.0 до 0.5)
+                zoom1 = 1.0 - 0.5 * progress
+
+                # Масштаб для второго клипа (увеличение от 0.5 до 1.0)
+                zoom2 = 0.5 + 0.5 * progress
+
+                # Подготовка кадров
+                from PIL import Image
+                import numpy as np
+
+                # Обработка первого кадра (уменьшение)
+                img1 = Image.fromarray(frame1)
+                new_w1, new_h1 = int(w * zoom1), int(h * zoom1)
+                img1 = img1.resize((new_w1, new_h1), Image.LANCZOS)
+
+                # Центрирование уменьшенного кадра
+                canvas1 = Image.new("RGB", (w, h))
+                x_offset1 = (w - new_w1) // 2
+                y_offset1 = (h - new_h1) // 2
+                canvas1.paste(img1, (x_offset1, y_offset1))
+
+                # Обработка второго кадра (увеличение)
+                img2 = Image.fromarray(frame2)
+                new_w2, new_h2 = int(w * zoom2), int(h * zoom2)
+                img2 = img2.resize((new_w2, new_h2), Image.LANCZOS)
+
+                # Центрирование увеличивающегося кадра
+                canvas2 = Image.new("RGB", (w, h))
+                x_offset2 = (w - new_w2) // 2
+                y_offset2 = (h - new_h2) // 2
+                canvas2.paste(img2, (x_offset2, y_offset2))
+
+                # Смешивание кадров с учетом прогресса
+                blended = Image.blend(canvas1, canvas2, progress)
+
+                return np.array(blended)
+
+            # Создаем переходный клип
+            transition_clip = VideoClip(make_frame, duration=transition_duration)
+            transition_clip = transition_clip.set_fps(clip1.fps)
+
+            return transition_clip
+
+        else:
+            raise ValueError(f"Неизвестный тип перехода: {transition_type}")
+
 
     def _process_video_generation(self,
         images, display_texts, audio_paths, speech_texts, fps = 30, frameTime = 5.0,
@@ -588,7 +691,7 @@ class MergeService:
                 topic="status_update_requests",
                 value={
                     "TaskId": pipeline_guid,
-                    "Status": 7, # Success
+                    "Status": 8, # Success
                     "VideoId": video_guid
                 },
                 method="updateStatus"

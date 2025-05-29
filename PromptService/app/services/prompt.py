@@ -122,6 +122,8 @@ class PromptService:
 
                 response = [
                     '[{"text": "Тестовый текст для видео", "photo_prompt": "photo description", "voice": "kirill"},'
+                    '{"text": "Тестируем текст", "photo_prompt": "photo description", "voice": "dasha"},'
+                    '{"text": "Больше текста, пожалуйста", "photo_prompt": "photo description", "voice": "dasha"},'
                     '{"text": "Еще больше тестового текста", "photo_prompt": "photo description", "voice": "dasha"}]'
                 ][0]
 
