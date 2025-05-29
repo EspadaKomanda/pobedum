@@ -80,12 +80,11 @@ using Serilog.Exceptions;
             var password = dbSettings["Password"] ?? "postgres";
             x.UseNpgsql($"Server={hostname}:{port};Database={name};Uid={username};Pwd={password};");
         });
-        builder.Services.AddScoped(typeof(GenericRepository<>));
+        builder.Services.AddSingleton(typeof(GenericRepository<>));
         builder.Services.AddScoped<UnitOfWork>(sp => new UnitOfWork(sp.GetRequiredService<ApplicationContext>()));
 
         #endregion
 
-       
         
         builder.Services.AddControllers();
         builder.Services.AddHttpClient();

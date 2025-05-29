@@ -83,7 +83,7 @@ public class KafkaTopicManager(IAdminClient adminClient, ILogger<KafkaTopicManag
         try
         {
             var result = _adminClient.CreateTopicsAsync(new TopicSpecification[]
-            { 
+            {  
                 new() {
                     Name = topicName,
                     NumPartitions = numPartitions,

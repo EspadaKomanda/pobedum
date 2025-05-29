@@ -75,7 +75,7 @@ namespace PipelineService.Autumn.MessageHandlers
                         List<object> parameters = new List<object>();
                         foreach (var parameter in config.ServiceMethodPair.Parameters)
                         {
-                            parameters.Add( JsonConvert.DeserializeObject(message.Message.Value,parameter.GetType()));
+                            parameters.Add( JsonConvert.DeserializeObject(message.Message.Value,parameter.ParameterType));
                         }
                         result = ServiceResolver.InvokeMethodByHeader(serviceProvider, config.ServiceMethodPair.Method, config.ServiceMethodPair.Service,parameters);
                     }

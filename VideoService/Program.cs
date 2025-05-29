@@ -78,8 +78,8 @@ builder.Services.AddDbContext<ApplicationContext>(x =>
     var password = dbSettings["Password"] ?? "postgres";
     x.UseNpgsql($"Server={hostname}:{port};Database={name};Uid={username};Pwd={password};");
 });
-builder.Services.AddScoped(typeof(GenericRepository<>));
-builder.Services.AddScoped<UnitOfWork>(sp => new UnitOfWork(sp.GetRequiredService<ApplicationContext>()));
+builder.Services.AddSingleton(typeof(GenericRepository<>));
+builder.Services.AddSingleton<UnitOfWork>(sp => new UnitOfWork(sp.GetRequiredService<ApplicationContext>()));
 
 #endregion
 var s3Settings =  builder.Configuration.GetSection("S3Settings");

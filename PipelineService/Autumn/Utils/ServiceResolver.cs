@@ -45,7 +45,7 @@ namespace PipelineService.Autumn.Utils
             {
                 throw new InvokeMethodException("Wrong method implementation: method should have parameters.");
             }
-
+            
             if (method.ReturnType == typeof(void))
             {
                 method.Invoke(serviceInstance,  parameters.ToArray() );

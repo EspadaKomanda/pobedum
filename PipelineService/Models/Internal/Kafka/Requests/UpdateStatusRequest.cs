@@ -4,6 +4,6 @@ namespace PipelineService.Models.Internal.Kafka.Requests;
 
 public class UpdateStatusRequest
 {
-    public Guid TaskId { get; set; }
     public GenerationStatuses Status { get; set; }
+    public Guid TaskId { get; set; }
 }

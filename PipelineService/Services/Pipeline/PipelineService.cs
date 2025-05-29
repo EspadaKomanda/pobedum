@@ -6,6 +6,7 @@ using PipelineService.Autumn.Attributes.ServiceAttributes;
 using PipelineService.Autumn.Utils;
 using PipelineService.Autumn.Utils.Models;
 using PipelineService.Communicators;
+using PipelineService.Database;
 using PipelineService.Database.Repositories;
 using PipelineService.Models.Database;
 using PipelineService.Models.Internal.Kafka.Requests;
@@ -53,6 +54,7 @@ public class PipelineService : IPipelineService
             var pipelineItem = await _unitOfWork.PipelineRepository.InsertAsync(
                 new PipelineItem()
                 {
+                    Id = request.TaskId,
                     BeginTime = DateTime.UtcNow,
                     ColorScheme = request.ColorScheme,
                     FrameRate = request.FrameRate,
@@ -113,31 +115,33 @@ public class PipelineService : IPipelineService
     {
         try
         {
-            if (_pipeline.Contains(request.TaskId))
+            if (_pipeline.Contains(request.TaskId) && request.Status == GenerationStatuses.SUCCESS)
             {
                 _pipeline.Remove(request.TaskId);
             }
 
-            var pipelineItem = await _unitOfWork.PipelineRepository.GetByIDAsync(request.TaskId);
-
-          
-            if (request.Status == GenerationStatuses.SUCCESS)
+            using (ApplicationContext context = new ApplicationContext(_configuration))
             {
+                var pipelineItem = context.Letters.FirstOrDefault(x => x.Id == request.TaskId);
                 
-                await _communicator.SendAddVideoRequest(new AddVideoRequest()
+                if (request.Status == GenerationStatuses.SUCCESS)
                 {
-                    BucketId = pipelineItem.Id.ToString(),
-                    AuthorId = pipelineItem.UserId,
-                    BuckedObjectId = pipelineItem.VideoId
-                });
-                pipelineItem.EndTime = DateTime.Now;
+                    VideosCringeCommunicator communicator = new VideosCringeCommunicator(new MicroservicesCringeHttpClient(new HttpClient()), _configuration);
+                    await communicator.SendAddVideoRequest(new AddVideoRequest()
+                    {
+                        BucketId = pipelineItem.Id.ToString(),
+                        AuthorId = pipelineItem.UserId,
+                        BuckedObjectId = pipelineItem.VideoId
+                    });
+                    pipelineItem.EndTime = DateTime.Now;
                 
-            }
-            pipelineItem.Status = request.Status;
-        
-            _unitOfWork.PipelineRepository.Update(pipelineItem);
+                }
+                pipelineItem.Status = request.Status;
+                context.Letters.Update(pipelineItem);
             
-            await _unitOfWork.SaveAsync();
+                context.SaveChanges();
+            }
+
         }
         catch (Exception e)
         {
