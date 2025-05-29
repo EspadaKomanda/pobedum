@@ -1,4 +1,6 @@
+from typing import List, Dict
 from pydantic import BaseModel, Json
+from .dtos import PromptParagraph
 
 class CreatePromptRequest(BaseModel, str_strip_whitespace=True):
 
@@ -11,7 +13,7 @@ class CreatePromptRequest(BaseModel, str_strip_whitespace=True):
 class EditPromptRequest(BaseModel, str_strip_whitespace=True):
 
     task_id: str
-    content: Json
+    content: List[Dict]
     pass
 
 class GetPromptRequest(BaseModel, str_strip_whitespace=True):

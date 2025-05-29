@@ -1,11 +1,12 @@
 """
 Prompt service for moderation and creation of instructions for generation of users' stories.
 """
+from ast import literal_eval
 import json
 import logging
 import tempfile
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 import uuid
 from redis import Redis
 
@@ -25,6 +26,8 @@ from app.objects.prompt_service.responses import (
     EditPromptResponse,
     GetPromptResponse
 )
+
+from app.objects.prompt_service.dtos import PromptParagraph
 
 from app.config import DEEPSEEK_API_KEY, GEN_MODE, PROMPT_MODERATION, PROMPT_GENERATION
 
@@ -203,6 +206,10 @@ class PromptService:
         if not self.redis.exists(f"{request.task_id}:state"):
             raise TaskNotFoundException
 
+        new_structure = str(request.content)
+
+        logger.debug("This is how new_structure look: '%s'", new_structure)
+
         initial_structure = ""
         with tempfile.NamedTemporaryFile(delete=False) as temp_file: # TODO: set delete to false
             temp_structure = temp_file.name
@@ -212,33 +219,35 @@ class PromptService:
                 destination=temp_structure
             )
             with open(temp_structure, 'r', encoding='utf-8') as f:
-                initial_structure = json.load(f)
+                initial_structure = str(json.loads(f.read()))
 
         # Check if content was not modified (only tags are allowed)
         def validate_content(initial_content, new_content):
 
             tag_set = ["<p>", "<phoneme>", "<speak>", "<s>", "<sub>"]
             
+            stripped_new_content = new_content
+            stripped_initial_content = initial_content
             for tag in tag_set:
-                new_content = new_content.replace(tag, "")
-            
-            new_content = new_content.strip()
-            
-            return new_content == initial_content
+                stripped_new_content = stripped_new_content.replace(tag, "")
+                stripped_initial_content = stripped_initial_content.replace(tag, "")
 
-        if not validate_content(initial_structure, request.content):
-            self.logger.error("Prompt altered")
+            logger.debug("initial: '%s'", stripped_initial_content)
+            logger.debug("new    : '%s'", stripped_new_content)
+
+            stripped_initial_content = stripped_initial_content.strip()
+            stripped_new_content = stripped_new_content.strip()
+            
+            return stripped_new_content == stripped_initial_content
+
+        if not validate_content(initial_structure, new_structure):
+            self.logger.exception("Prompt altered")
             raise PromptEditInvalidatedException
 
-        # Make sure the content is still valid json
-        try:
-            json.loads(request.content)
-        except json.JSONDecodeError:
-            self.logger.error("Altered prompt is not valid json")
-            raise PromptEditInvalidatedException()
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            logger.debug("Writing new structure: '%s'", str(json.dumps(literal_eval(new_structure))))
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=True) as f:
-            f.write(request.content)
+            f.write(str(json.dumps(literal_eval(new_structure))))
             temp_path = f.name
         
         S3Service.upload(
@@ -250,24 +259,28 @@ class PromptService:
 
         return EditPromptResponse(task_id=request.task_id, content=request.content)
 
-    def get_task(self, request: GetPromptRequest) -> GetPromptResponse:
+    def get_task(self, task_id: str) -> GetPromptResponse:
         """"""
-        if not self.redis.exists(f"{request.task_id}:state"):
+        if not self.redis.exists(f"{task_id}:state"):
             raise TaskNotFoundException
 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file: # TODO: set delete to false
             temp_structure = temp_file.name
             S3Service.download(
-                bucket_name=request.task_id,
+                bucket_name=task_id,
                 source="structure.json",
                 destination=temp_structure
             )
             with open(temp_structure, 'r', encoding='utf-8') as f:
-                structure = json.load(f)
+                structure = f.read()
+
+            self.logger.debug("Returning structure.json: '%s'", structure)
+
+            logger.debug("Returning the structure to GET method: '%s'", structure)
 
             return GetPromptResponse(
-                request.task_id,
-                structure 
+                task_id=task_id,
+                content=structure 
             )
 
     def process_message(self, message: Dict[str, Any]):

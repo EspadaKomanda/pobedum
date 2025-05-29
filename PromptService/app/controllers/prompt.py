@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated
+from typing import Annotated, List
 from fastapi_controllers import Controller, get, post, put
 from fastapi import Depends, HTTPException, Query
 
@@ -18,6 +18,10 @@ from app.objects.prompt_service.responses import (
     GetPromptResponse
 )
 
+from app.objects.prompt_service.dtos import PromptParagraph
+
+from app.exceptions.prompt import PromptEditInvalidatedException
+
 logger = logging.getLogger(__name__)
 
 class PromptController(Controller):
@@ -29,15 +33,11 @@ class PromptController(Controller):
         Creates a prompt task and generates the structure.json file necessary
         for generation of audio and photo.
         """
-        response = None
-
         try:
             result = service.pregenerate_task(data)
             return result
         except Exception:
             logger.exception("Error in service")
-            pass
-        finally:
             raise HTTPException(status_code=500, detail="Something went terribly wrong")
 
     @put("/prompt", response_model=EditPromptResponse)
@@ -46,29 +46,23 @@ class PromptController(Controller):
         Allows to modify the generated structure.json to add
         audio tags for Yandex Speechkit intonation.
         """
-        response = None
-
         try:
             result = service.edit_task(data)
             return result
+        except PromptEditInvalidatedException:
+            raise HTTPException(status_code=400, detail="Forbidden prompt alterations")
         except Exception:
             logger.exception("Error in service")
-            pass
-        finally:
             raise HTTPException(status_code=500, detail="Something went terribly wrong")
 
-    @get("/prompt", response_model=GetPromptRequest)
-    def get(self, data: GetPromptRequest, service: PromptService  = Depends(get_prompt_service)) -> GetPromptResponse:
+    @get("/prompt/{task_id}", response_model=GetPromptResponse)
+    def get(self, task_id: str, service: PromptService  = Depends(get_prompt_service)) -> GetPromptResponse:
         """
         Allows to get the existing prompt structure via its task id.
         """
-        response = None
-
         try:
-            result = service.get_task(data)
+            result = service.get_task(task_id)
             return result
         except Exception:
             logger.exception("Error in service")
-            pass
-        finally:
             raise HTTPException(status_code=500, detail="Something went terribly wrong")
