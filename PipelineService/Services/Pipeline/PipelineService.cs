@@ -136,8 +136,12 @@ public class PipelineService : IPipelineService
                     pipelineItem.EndTime = DateTime.UtcNow;
                 
                 }
-                pipelineItem.Status = request.Status;
-                context.Letters.Update(pipelineItem);
+
+                if (pipelineItem.Status != GenerationStatuses.SUCCESS)
+                {
+                    pipelineItem.Status = request.Status;
+                    context.Letters.Update(pipelineItem);
+                }
             
                 context.SaveChanges();
             }
