@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi_controllers import Controller, get, post, put
 from fastapi import Depends
 
-from app.controllers import get_prompt_service
+from app.controllers.depends import get_prompt_service
 from app.services.prompt import PromptService
 
 from app.objects.prompt_service.requests import (
@@ -43,7 +43,7 @@ class PromptController(Controller):
         raise NotImplementedError
 
     @get("/prompt", response_model=GetPromptRequest)
-    def generate(self, data: GetPromptRequest, service: PromptService  = Depends(get_prompt_service)) -> GetPromptResponse:
+    def get(self, data: GetPromptRequest, service: PromptService  = Depends(get_prompt_service)) -> GetPromptResponse:
         """
         Allows to get the existing prompt structure via its task id.
         """

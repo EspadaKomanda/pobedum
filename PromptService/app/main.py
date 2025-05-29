@@ -10,6 +10,7 @@ from app.utils.filters.fastapi_healthcheck import FastAPIHealthCheckFilter
 from app import config
 from app import models
 from app import controllers
+from app.controllers import depends
 from app.services.prompt import PromptService
 
 models.create_database()
@@ -22,7 +23,7 @@ async def lifespan(app: FastAPI):
         kafka_bootstrap_servers=config.KAFKA_BROKERS
     )
 
-    controllers.prompt_service = prompt_service
+    depends.prompt_service = prompt_service
 
     prompt_service.start()
     yield

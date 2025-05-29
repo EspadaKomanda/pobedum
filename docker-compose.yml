@@ -137,6 +137,8 @@ services:
       interval: 30s
       timeout: 1s
       retries: 3
+    ports:
+      - "8111:8000"
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
