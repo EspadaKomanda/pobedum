@@ -53,7 +53,11 @@ def main():
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            "127.0.0.1:8000"
+            "127.0.0.1:8000",
+            "http://81.200.156.61/",
+            "https://81.200.156.61/",
+            "81.200.156.61",
+            "*"
         ],
         allow_credentials=True,
         allow_methods=["*"],
