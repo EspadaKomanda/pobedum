@@ -11,7 +11,7 @@ from redis import Redis
 
 from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
 from app.services.openai import OpenAIService, APIException
-from app.services.prompt import PromptModeratedException, TaskNotFoundException
+from app.exceptions.prompt import PromptModeratedException, TaskNotFoundException, PromptEditInvalidatedException
 from app.services.s3 import S3Service
 
 from app.objects.prompt_service.requests import (
@@ -188,29 +188,71 @@ class PromptService:
         """Pregenerates the prompt structure and creates a task"""
         
         pipeline_id = str(uuid.uuid4())
-        is_moderated = self._moderate_prompt(request.text)
+        is_not_moderated = self._moderate_prompt(request.text)
 
-        if (is_moderated):
+        if (not is_not_moderated):
             raise PromptModeratedException
 
-        prompt_json = self._generate_and_save_prompts(pipeline_guid, request.text)
+        prompt_json = self._generate_and_save_prompts(pipeline_id, request.text)
 
-        self.redis.set(f"{pipeline_guid}:state", "awaiting")
-        return CreatePromptResponse(
-            task_id: pipeline_guid
-            content: prompt_json
-        )
+        self.redis.set(f"{pipeline_id}:state", "awaiting")
+        return CreatePromptResponse(task_id=pipeline_id)
 
     def edit_task(self, request: EditPromptRequest) -> EditPromptResponse:
         """"""
-        if not self.redis.exists(f"{pipeline_guid}:state":
+        if not self.redis.exists(f"{request.task_id}:state"):
             raise TaskNotFoundException
 
-        raise NotImplementedError
+        initial_structure = ""
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file: # TODO: set delete to false
+            temp_structure = temp_file.name
+            S3Service.download(
+                bucket_name=request.task_id,
+                source="structure.json",
+                destination=temp_structure
+            )
+            with open(temp_structure, 'r', encoding='utf-8') as f:
+                initial_structure = json.load(f)
+
+        # Check if content was not modified (only tags are allowed)
+        def validate_content(initial_content, new_content):
+
+            tag_set = ["<p>", "<phoneme>", "<speak>", "<s>", "<sub>"]
+            
+            for tag in tag_set:
+                new_content = new_content.replace(tag, "")
+            
+            new_content = new_content.strip()
+            
+            return new_content == initial_content
+
+        if not validate_content(initial_structure, request.content):
+            self.logger.error("Prompt altered")
+            raise PromptEditInvalidatedException
+
+        # Make sure the content is still valid json
+        try:
+            json.loads(request.content)
+        except json.JSONDecodeError:
+            self.logger.error("Altered prompt is not valid json")
+            raise PromptEditInvalidatedException()
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=True) as f:
+            f.write(request.content)
+            temp_path = f.name
+        
+        S3Service.upload(
+            bucket_name=request.task_id,
+            destination="structure.json",
+            source=temp_path,
+            create_bucket_if_not_exists=True
+        )
+
+        return EditPromptResponse(task_id=request.task_id, content=request.content)
 
     def get_task(self, request: GetPromptRequest) -> GetPromptResponse:
         """"""
-        if not self.redis.exists(f"{request.task_id}:state":
+        if not self.redis.exists(f"{request.task_id}:state"):
             raise TaskNotFoundException
 
         with tempfile.NamedTemporaryFile(delete=False) as temp_file: # TODO: set delete to false
@@ -224,8 +266,8 @@ class PromptService:
                 structure = json.load(f)
 
             return GetPromptResponse(
-                task_id: request.task_id,
-                content: structure 
+                request.task_id,
+                structure 
             )
 
     def process_message(self, message: Dict[str, Any]):
@@ -258,7 +300,7 @@ class PromptService:
             # # Step 2: Generate and save prompts
             # self._generate_and_save_prompts(pipeline_guid, user_prompt)
             
-            if not self.redis.exists(f"{pipeline_guid}:state":
+            if not self.redis.exists(f"{pipeline_guid}:state"):
                 self.logger.error("No task with id %s", pipeline_guid)
                 return
 
