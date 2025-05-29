@@ -36,7 +36,7 @@ public class VideoService : IVideoService
     {
         try
         {
-            var videoInformation = await _unitOfWork.VideoRepository.GetByIDAsync(videoId);
+            var videoInformation =  _unitOfWork.VideoRepository.Get().FirstOrDefault(x=> x.VideoId == videoId);
             if (await _s3StorageService.CheckIfBucketExists(videoInformation.BucketName))
             {
                 var videoUrl = await _s3StorageService.GetVideoUrlFromS3Bucket(videoInformation.VideoId,
@@ -132,6 +132,7 @@ public class VideoService : IVideoService
         {
             await _unitOfWork.VideoRepository.InsertAsync(new Video()
             {
+                VideoId = addVideoRequest.BuckedObjectId,
                 BucketName = addVideoRequest.BucketId,
                 AuthorId = addVideoRequest.AuthorId,
                 LetterId = addVideoRequest.LetterId

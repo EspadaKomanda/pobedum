@@ -30,11 +30,11 @@ public class S3StorageService : IS3StorageService
     {
         try
         {
-            GetObjectMetadataResponse metadataResponse = await _s3Client.GetObjectMetadataAsync(bucketName, videoKey.ToString());
+            GetObjectMetadataResponse metadataResponse = await _s3Client.GetObjectMetadataAsync(bucketName,videoKey.ToString()+".mp4");
             
             if(metadataResponse.HttpStatusCode == HttpStatusCode.OK)
             {
-                var response =  _s3Client.GetPreSignedURL(new GetPreSignedUrlRequest(){ BucketName = bucketName, Key =  videoKey.ToString(), Expires = DateTime.Now.AddMinutes(10), Protocol = Protocol.HTTPS});
+                var response =  _s3Client.GetPreSignedURL(new GetPreSignedUrlRequest(){ BucketName = bucketName, Key =  videoKey.ToString()+".mp4", Expires = DateTime.Now.AddYears(10), Protocol = Protocol.HTTPS});
                 
                 _logger.LogInformation($"Uri for video {videoKey} aquired from S3 bucket {bucketName}!");
                 return response;

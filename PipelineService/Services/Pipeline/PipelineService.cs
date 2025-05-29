@@ -133,7 +133,7 @@ public class PipelineService : IPipelineService
                         AuthorId = pipelineItem.UserId,
                         BuckedObjectId = pipelineItem.VideoId
                     });
-                    pipelineItem.EndTime = DateTime.Now;
+                    pipelineItem.EndTime = DateTime.UtcNow;
                 
                 }
                 pipelineItem.Status = request.Status;
