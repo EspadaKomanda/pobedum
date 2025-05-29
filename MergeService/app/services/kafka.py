@@ -40,7 +40,7 @@ class KafkaProducerClient:
         self.producer = Producer(conf)
         self.logger.info("Initialized producer for servers: %s", bootstrap_servers)
 
-    def send_message(self, topic, value, key=None):
+    def send_message(self, topic, value, method=None, key=None):
         """
         Produce a message to the specified Kafka topic.
 
@@ -61,11 +61,13 @@ class KafkaProducerClient:
         try:
             serialized_value = self.value_serializer(value)
             serialized_key = self.key_serializer(key) if key is not None else None
-
+            headers = [("method", method.encode("utf-8"))] if method else None
+            
             self.producer.produce(
                 topic=topic,
                 value=serialized_value,
                 key=serialized_key,
+                headers=headers,
                 callback=delivery_callback
             )
             self.producer.poll(0)
