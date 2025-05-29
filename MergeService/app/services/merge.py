@@ -10,6 +10,8 @@ from typing import Dict, Any
 from redis import Redis
 import cv2
 
+from PIL import Image, ImageDraw, ImageFont
+
 import numpy as np
 from moviepy.editor import (
     VideoClip,
@@ -17,6 +19,7 @@ from moviepy.editor import (
     VideoFileClip,
     concatenate_videoclips,
     AudioFileClip,
+    ImageClip
 )
 from moviepy.video.fx.all import fadein, fadeout
 import wave
@@ -328,6 +331,42 @@ class MergeService:
 
         return output_path
 
+    def _create_text_overlay_bottom(self, text, duration, size, fontsize=40, bg_opacity=0.5, bottom_margin=20):
+        img = Image.new('RGBA', size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        try:
+            font = ImageFont.truetype("/dir/glina_script.ttf", fontsize)
+        except:
+            font = ImageFont.load_default()
+
+        lines = text.split('\n')
+        line_height = fontsize + 5
+        total_height = len(lines) * line_height
+
+        # Calculate text widths for each line
+        text_sizes = [draw.textlength(line, font=font) for line in lines]
+        max_width = max(text_sizes)
+
+        # Calculate background position (full width)
+        bg_x1 = 0  # Start from left edge
+        bg_y1 = size[1] - total_height - 2*bottom_margin  # Position from bottom
+        bg_x2 = size[0]  # Extend to right edge
+        bg_y2 = size[1]  # Extend to bottom
+
+        # Draw full-width semi-transparent background
+        draw.rectangle([bg_x1, bg_y1, bg_x2, bg_y2],
+                     fill=(0, 0, 0, int(255 * bg_opacity)))
+
+        # Draw text (centered horizontally)
+        y_pos = bg_y1 + bottom_margin
+        for line, width in zip(lines, text_sizes):
+            x_pos = (size[0] - width) // 2
+            draw.text((x_pos, y_pos), line, font=font, fill=(255, 255, 255, 255))
+            y_pos += line_height
+
+        return ImageClip(np.array(img), duration=duration)
+
     def _process_video_generation(self,
         images, display_texts, audio_paths, speech_texts, fps = 30, frameTime = 5.0,
         enableAudio = False, enableFading = False, fadingType = None, enableSubTitles = False, subTitlesPosition = 'center', task_id = None):
@@ -391,13 +430,12 @@ class MergeService:
             video_clip = VideoClip(make_frame, duration=audio_durations[i])
             video_clip.fps = fps
 
-            # TODO: 5. Создаем текстовый слой
-            if (False and enableSubTitles):
+            if (enableSubTitles):
                 text_clip = self._create_text_overlay_bottom(
                     display_texts[i],
                     duration=audio_durations[i],
                     size=(width, height),
-                    fontsize=12,
+                    fontsize=40,
                     bg_opacity=0.5
                 )
 

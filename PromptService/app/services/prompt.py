@@ -121,8 +121,8 @@ class PromptService:
             if GEN_MODE == "plug":
 
                 response = [
-                    '[{"text": "Hello people1", "photo_prompt": "photo description", "voice": "kirill"},'
-                    '{"text": "Hello people4", "photo_prompt": "photo description", "voice": "dasha"}]'
+                    '[{"text": "Тестовый текст для видео", "photo_prompt": "photo description", "voice": "kirill"},'
+                    '{"text": "Еще больше тестового текста", "photo_prompt": "photo description", "voice": "dasha"}]'
                 ][0]
 
             else:
@@ -285,6 +285,8 @@ class PromptService:
 
     def process_message(self, message: Dict[str, Any]):
         """Processes incoming Kafka messages from the pipeline."""
+        pipeline_guid = message["PipelineId"]
+        video_guid = message["VideoId"]
         try:
             pipeline_guid = message["PipelineId"]
             video_guid = message["VideoId"]
