@@ -65,7 +65,7 @@ public class VideoService : IVideoService
     public async Task<GetVideosByUserIdResponse> GetVideosByUserId(User user, int page, int size)
     {
         
-        var query = _unitOfWork.VideoRepository.Get();
+        var query = _unitOfWork.VideoRepository.Get().Where(x => x.AuthorId == user.Id);
     
         var totalItems = await query.CountAsync();
     

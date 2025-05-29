@@ -57,7 +57,7 @@ public class VideosCommunicator
     {
         try
         {
-            return await _microservicesHttpClient.GetAsync<GetVideosByUserIdResponse>($"{_paths["GetVideoByUserId"]}/{userId}?page={page}?size={size}",
+            return await _microservicesHttpClient.GetAsync<GetVideosByUserIdResponse>($"{_paths["GetVideoByUserId"]}/{userId}?page={page}&size={size}",
                 new Dictionary<string, string>());
         }
         catch (Exception e)
