@@ -7,7 +7,7 @@ public class Video
     [Key]
     public Guid VideoId { get; set; }
     public Guid AuthorId { get; set; }
-    public Guid? LetterId { get; set; }
+    public string Text { get; set; }
     public string? Resolution { get; set; }
     public int? DurationSeconds { get; set; }
     public DateTime CreatedAt { get; set; }

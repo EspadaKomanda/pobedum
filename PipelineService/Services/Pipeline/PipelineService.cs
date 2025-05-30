@@ -131,7 +131,9 @@ public class PipelineService : IPipelineService
                     {
                         BucketId = pipelineItem.Id.ToString(),
                         AuthorId = pipelineItem.UserId,
-                        BuckedObjectId = pipelineItem.VideoId
+                        BuckedObjectId = pipelineItem.VideoId,
+                        Resolution = pipelineItem.Resolution,
+                        Text = pipelineItem.Text
                     });
                     pipelineItem.EndTime = DateTime.UtcNow;
                 

@@ -1,3 +1,4 @@
+using MediaInfo.DotNetWrapper.Enumerations;
 using Microsoft.EntityFrameworkCore;
 using VideoService.Database.Repositories;
 using VideoService.Models;
@@ -46,7 +47,7 @@ public class VideoService : IVideoService
                     VideoId = videoInformation.VideoId,
                     CreatedAt = videoInformation.CreatedAt,
                     DurationSeconds = videoInformation.DurationSeconds,
-                    LetterId = videoInformation.LetterId,
+                    Text = videoInformation.Text,
                     Resolution = videoInformation.Resolution,
                     SizeMb = videoInformation.SizeMb,
                     VideoUrl = videoUrl
@@ -79,7 +80,7 @@ public class VideoService : IVideoService
             VideoId = videoInformation.VideoId,
             CreatedAt = videoInformation.CreatedAt,
             DurationSeconds = videoInformation.DurationSeconds,
-            LetterId = videoInformation.LetterId,
+            Text = videoInformation.Text,
             Resolution = videoInformation.Resolution,
             SizeMb = videoInformation.SizeMb,
             VideoUrl =  _s3StorageService.GetVideoUrlFromS3Bucket(videoInformation.VideoId,
@@ -108,7 +109,7 @@ public class VideoService : IVideoService
                 VideoId = videoInformation.VideoId,
                 CreatedAt = videoInformation.CreatedAt,
                 DurationSeconds = videoInformation.DurationSeconds,
-                LetterId = videoInformation.LetterId,
+                Text = videoInformation.Text,
                 Resolution = videoInformation.Resolution,
                 SizeMb = videoInformation.SizeMb,
                 VideoUrl =  _s3StorageService.GetVideoUrlFromS3Bucket(videoInformation.VideoId,
@@ -128,14 +129,26 @@ public class VideoService : IVideoService
 
     public async Task<bool> AddVideo(AddVideoRequest addVideoRequest)
     {
+        
+        
+        
         try
         {
+
+
+            string url = await _s3StorageService.GetVideoUrlFromS3Bucket(addVideoRequest.BuckedObjectId,
+                addVideoRequest.BucketId);
+            var info = await DownloadVideoAsync(url);
             await _unitOfWork.VideoRepository.InsertAsync(new Video()
             {
                 VideoId = addVideoRequest.BuckedObjectId,
                 BucketName = addVideoRequest.BucketId,
                 AuthorId = addVideoRequest.AuthorId,
-                LetterId = addVideoRequest.LetterId
+                Resolution = addVideoRequest.Resolution,
+                CreatedAt = DateTime.UtcNow,
+                Text = addVideoRequest.Text,
+                DurationSeconds = (int)Math.Ceiling(info.durationInSeconds),
+                SizeMb = (int)Math.Ceiling(info.sizeInMegabytes)
             });
             return await _unitOfWork.SaveAsync();
         }
@@ -143,6 +156,63 @@ public class VideoService : IVideoService
         {
             _logger.LogError(e.Message,e);
             throw;
+        }
+    }
+
+    #endregion
+
+    #region CringeUtils
+
+    public async Task<(double durationInSeconds, double sizeInMegabytes)> DownloadVideoAsync(string videoUrl)
+    {
+        
+        
+        var httpClient = new HttpClient();
+        var response = await httpClient.GetAsync(videoUrl);
+        response.EnsureSuccessStatusCode();
+
+        // Read the video content into a MemoryStream
+        await using var memoryStream = new MemoryStream();
+        await response.Content.CopyToAsync(memoryStream);
+
+        // Get the size of the video in megabytes
+        double sizeInMegabytes = memoryStream.Length / (1024.0 * 1024.0); // Convert bytes to megabytes
+
+        // Get the duration of the video
+        double durationInSeconds = await GetVideoDuration(memoryStream);
+
+        return (durationInSeconds, sizeInMegabytes);
+    }
+
+    private async Task<double> GetVideoDuration(Stream videoStream)
+    {
+        // Create a temporary file to use with MediaInfo
+        string tempFilePath = Path.GetTempFileName();
+        try
+        {
+            // Write the stream to a temporary file
+            await using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await videoStream.CopyToAsync(fileStream);
+            }
+
+            using (var mediaInfo = new MediaInfo.DotNetWrapper.MediaInfo())
+            {
+                mediaInfo.Open(tempFilePath);
+                var duration = mediaInfo.Get(StreamKind.General, 0, "Duration");
+                mediaInfo.Close();
+
+                // Convert duration from milliseconds to seconds
+                return double.TryParse(duration, out var durationInMilliseconds) ? durationInMilliseconds / 1000.0 : 0;
+            }
+        }
+        finally
+        {
+            // Clean up the temporary file
+            if (File.Exists(tempFilePath))
+            {
+                File.Delete(tempFilePath);
+            }
         }
     }
 
