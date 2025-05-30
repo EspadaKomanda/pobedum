@@ -180,12 +180,13 @@ class PromptService:
         })
         self.producer.send_message("audio_requests", message)
 
-    def _request_start_photo(self, pipeline_guid: str, video_guid: str):
+    def _request_start_photo(self, pipeline_guid: str, video_guid: str, resolution: str):
         """Notifies PhotoService to start processing via Kafka."""
         message = json.dumps({
             "Action": "StartPhotoGeneration", # TODO: make sure action is the same in photo service
             "TaskId": pipeline_guid,
-            "VideoId": video_guid
+            "VideoId": video_guid,
+            "Resolution": resolution
         })
         self.producer.send_message("photo_requests", message)
 
@@ -201,6 +202,8 @@ class PromptService:
         prompt_json = self._generate_and_save_prompts(pipeline_id, request.text)
 
         self.redis.set(f"{pipeline_id}:state", "awaiting")
+        self.redis.set(f"{pipeline_id}:resolution", request.resolution)
+
         return CreatePromptResponse(task_id=pipeline_id)
 
     def edit_task(self, request: EditPromptRequest) -> EditPromptResponse:
@@ -331,9 +334,12 @@ class PromptService:
                 self.logger.error("No task with id %s", pipeline_guid)
                 return
 
+            # Get res from redis
+            resolution = self.redis.get(f"{pipeline_guid}:resolution") or "1024x1024"
+
             # Step 3: Trigger downstream services
             self._request_start_audio(pipeline_guid, video_guid)
-            self._request_start_photo(pipeline_guid, video_guid)
+            self._request_start_photo(pipeline_guid, video_guid, resolution)
             
             # Notify pipeline of success
             # self.producer.send_message(
