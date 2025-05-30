@@ -1,5 +1,5 @@
 from typing import List, Dict
-from pydantic import BaseModel, Json
+from pydantic import BaseModel, Json, validator
 from .dtos import PromptParagraph
 
 class CreatePromptRequest(BaseModel, str_strip_whitespace=True):
@@ -9,6 +9,12 @@ class CreatePromptRequest(BaseModel, str_strip_whitespace=True):
     resolution: str = "1024x1024"
     model: str = "remote"
     frame_rate: int = 5
+
+    @validator('resolution')
+    def validate_resolution(cls, value):
+        if value not in ['512x512', '1024x1024']:
+            raise ValueError('Resolution must be either "512x512" or "1024x1024".')
+        return value
 
 class EditPromptRequest(BaseModel, str_strip_whitespace=True):
 
