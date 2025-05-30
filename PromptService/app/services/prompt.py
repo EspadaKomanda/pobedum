@@ -321,7 +321,7 @@ class PromptService:
                 "status_update_requests",
                 json.dumps({
                     "TaskId": pipeline_guid,
-                    "Status": 9 # Waiting
+                    "Status": 2 # Creating images
                 }),
                 method="updateStatus"
             )
