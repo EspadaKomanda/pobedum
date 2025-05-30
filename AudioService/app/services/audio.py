@@ -42,7 +42,8 @@ class AudioService:
         bucket_id: str,
         file_id: str,
         video_guid: str,
-        voice: str
+        voice: str,
+        mood: str = "neutral"
     ) -> str:
         """
         Generates audio file from text and saves it to S3.
@@ -54,7 +55,8 @@ class AudioService:
                 text=text,
                 s3_bucket=bucket_id,
                 s3_key=s3_key,
-                voice=voice
+                voice=voice,
+                mood=mood
             )
             self.logger.info("Generated audio for file %s in bucket %s", file_id, bucket_id)
             return s3_path
@@ -90,12 +92,14 @@ class AudioService:
             audio_files = []
             for idx, paragraph in enumerate(structure, start=1):
                 voice = paragraph.get('voice', 'john')
+                mood = paragraph.get('mood', 'neutral')
                 audio_path = self._generate_and_save_audio(
                     text=paragraph['text'],
                     bucket_id=pipeline_guid,
                     file_id=f"audio{idx}",
                     video_guid=video_guid,
-                    voice=voice
+                    voice=voice,
+                    mood=mood
                 )
                 audio_files.append(os.path.basename(audio_path))
 

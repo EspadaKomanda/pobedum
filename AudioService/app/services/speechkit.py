@@ -32,7 +32,7 @@ class YandexSpeechKitService:
     """
 
     def synthesize_to_s3(
-        self, text: str, s3_bucket: str, s3_key: str, voice: str = "john"
+        self, text: str, s3_bucket: str, s3_key: str, voice: str = "john", mood = "neutral"
     ) -> str:
         """
         Synthesizes text to speech and uploads the resulting audio to an S3 bucket.
@@ -72,6 +72,7 @@ class YandexSpeechKitService:
 
                 model = model_repository.synthesis_model()
                 model.voice = voice
+                model.role = mood
 
                 audio_segment = model.synthesize(text, raw_format=False)
                 logger.info("Synthesized audio for text: %s", text)

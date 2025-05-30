@@ -121,10 +121,10 @@ class PromptService:
             if GEN_MODE == "plug":
 
                 response = [
-                    '[{"text": "Тестовый текст для видео", "photo_prompt": "photo description", "voice": "kirill"},'
-                    '{"text": "Тестируем текст", "photo_prompt": "photo description", "voice": "dasha"},'
-                    '{"text": "Больше текста, пожалуйста", "photo_prompt": "photo description", "voice": "dasha"},'
-                    '{"text": "Еще больше тестового текста", "photo_prompt": "photo description", "voice": "dasha"}]'
+                    '[{"text": "Тестовый текст для видео", "photo_prompt": "photo description", "voice": "kirill", "mood": "neutral"},'
+                    '{"text": "Тестируем текст", "photo_prompt": "photo description", "voice": "dasha", "mood": "friendly},'
+                    '{"text": "Больше текста, пожалуйста", "photo_prompt": "photo description", "voice": "kirill", "mood": "strict"},'
+                    '{"text": "Еще больше тестового текста", "photo_prompt": "photo description", "voice": "dasha", "mood": "neutral"}]'
                 ][0]
 
             else:
