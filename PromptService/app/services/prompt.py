@@ -316,6 +316,16 @@ class PromptService:
             # 
             # # Step 2: Generate and save prompts
             # self._generate_and_save_prompts(pipeline_guid, user_prompt)
+
+            self.producer.send_message(
+                "status_update_requests",
+                json.dumps({
+                    "TaskId": pipeline_guid,
+                    "Status": 9 # Waiting
+                }),
+                method="updateStatus"
+            )
+
             
             if not self.redis.exists(f"{pipeline_guid}:state"):
                 self.logger.error("No task with id %s", pipeline_guid)
