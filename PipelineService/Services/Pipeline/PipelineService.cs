@@ -124,7 +124,7 @@ public class PipelineService : IPipelineService
             {
                 var pipelineItem = context.Letters.FirstOrDefault(x => x.Id == request.TaskId);
                 
-                if (request.Status == GenerationStatuses.SUCCESS)
+                if (request.Status == GenerationStatuses.SUCCESS && pipelineItem.Status != GenerationStatuses.SUCCESS)
                 {
                     VideosCringeCommunicator communicator = new VideosCringeCommunicator(new MicroservicesCringeHttpClient(new HttpClient()), _configuration);
                     await communicator.SendAddVideoRequest(new AddVideoRequest()

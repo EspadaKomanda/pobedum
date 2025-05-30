@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ApiGatewayService.Communicators;
 using ApiGatewayService.Models.BasicResponses;
 using Microsoft.AspNetCore.Mvc;
@@ -33,6 +34,7 @@ public class VideoController : ControllerBase
     {
         try
         {
+           
             return Ok(await _videosCommunicator.SendGetVideoByIdRequest(id));
         }
         catch (Exception e)
@@ -46,12 +48,27 @@ public class VideoController : ControllerBase
         }
     }
 
-    [HttpGet("videos/{userId}")]
-    public async Task<IActionResult> GetVideoByUserId(Guid userId,[FromQuery] int page, [FromQuery] int size)
+    [HttpGet("videos")]
+    public async Task<IActionResult> GetVideoByUserId([FromQuery] int page, [FromQuery] int size)
     {
         try
         {
-            return Ok(await _videosCommunicator.SendGetVideoByUserId(userId,page,size));
+            Guid userId = Guid.Empty;
+            string userRole = "";
+            foreach (var claim in User.Claims)
+            {
+                if(claim.Type==ClaimTypes.Name)
+                    userId = Guid.Parse(claim.Value);
+                if(claim.Type==ClaimTypes.Role)
+                    userRole = claim.Value;   
+            }
+
+            if (userId != Guid.Empty)
+            {
+                
+                return Ok(await _videosCommunicator.SendGetVideoByUserId(userId,page,size));
+            }
+            return Unauthorized();
         }
         catch (Exception e)
         {
