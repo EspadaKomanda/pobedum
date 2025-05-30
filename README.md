@@ -217,8 +217,9 @@ status_update_requests (partitions count = 3, replication factor = 1)
 
 **Разработка:**
 - Хлынин Роман - backend разработчик (C#/.NET)
+- Папин Николай - backend разработчик (Python)
 - Шевченко Рудольф, Дорошко Максим - frontend разработчик (Next.js)
-- Папин Николай, Дорошко Максим - инженер ML (Python)
+- Дорошко Максим - инженер ML (Python)
 
 **Дизайн и UX:**
 - Кривошеева Екатерина - UX/UI дизайнер

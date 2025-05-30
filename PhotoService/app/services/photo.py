@@ -52,7 +52,7 @@ class PhotoService:
             self.logger.error("Failed to download image: %s", e)
             raise
 
-    def _generate_photos(self, pipeline_guid: str, video_guid: str):
+    def _generate_photos(self, pipeline_guid: str, video_guid: str, resolution: str):
         """Generates and stores images for all prompts in structure.json."""
         try:
             # Download structure.json from S3
@@ -82,7 +82,7 @@ class PhotoService:
                     image_urls = self.openai_service.generate_image(
                         prompt=prompt,
                         n=1,
-                        size="1024x1024",
+                        size=resolution,
                         quality="hd"
                     )
                 
@@ -128,9 +128,10 @@ class PhotoService:
 
             pipeline_guid = message['TaskId']
             video_guid = message['VideoId']
+            resolution = message.get('Resolution', '1024x1024')
             self.logger.info("Starting image generation for pipeline %s", pipeline_guid)
 
-            self._generate_photos(pipeline_guid, video_guid)
+            self._generate_photos(pipeline_guid, video_guid, resolution)
 
             # Notify MergeService
             self.producer.send_message(
