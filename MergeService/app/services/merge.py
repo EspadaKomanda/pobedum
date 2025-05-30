@@ -15,12 +15,16 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from moviepy.editor import (
     VideoClip,
+    CompositeAudioClip,
     CompositeVideoClip,
     VideoFileClip,
     concatenate_videoclips,
     AudioFileClip,
     ImageClip
 )
+
+from moviepy.audio.fx import all as afx
+
 from moviepy.video.fx.all import fadein, fadeout
 import wave
 from app.services.kafka import ThreadedKafkaConsumer, KafkaProducerClient
@@ -284,7 +288,7 @@ class MergeService:
         first_clip_end = max(0, clips[0].duration - transition_duration)
         final_clips.append(clips[0].subclip(0, first_clip_end))
 
-        transitions = ["fade", "zoom", "slide"]
+        transitions = ["fade", "fade"]
 
         for i in range(1, len(clips)):
             # Части для перехода
@@ -302,7 +306,7 @@ class MergeService:
             transition = self._create_transition(
                 prev_clip_part,
                 next_clip_part,
-                transitions[i % 3],
+                transitions[i % 2],
                 transition_duration
             )
             final_clips.append(transition)
@@ -380,36 +384,65 @@ class MergeService:
             ])
 
         elif transition_type == 'slide':
-            # Функция для создания эффекта сдвига
-            def slide_effect(get_frame, t):
-                if t < transition_duration:
-                    # Первый клип уезжает влево, второй приезжает справа
-                    progress = t / transition_duration
-
-                    # Получаем кадры из обоих клипов
-                    frame1 = get_frame(t) if hasattr(clip1, 'get_frame') else clip1.get_frame(t)
-                    frame2 = clip2.get_frame(t) if hasattr(clip2, 'get_frame') else clip2.get_frame(t)
-
-                    # Вычисляем смещение в пикселях
-                    offset = int(progress * frame1.shape[1])
-
-                    # Создаем новый кадр
-                    new_frame = np.zeros_like(frame1)
-
-                    # Первый клип - левая часть (уезжает влево)
-                    new_frame[:, :frame1.shape[1]-offset] = frame1[:, offset:]
-
-                    # Второй клип - правая часть (приезжает справа)
-                    new_frame[:, frame1.shape[1]-offset:] = frame2[:, :offset]
-
-                    return new_frame
-                return get_frame(t)
-
-            # Создаем переходный клип
-            transition_clip = clip1.fl(slide_effect)
-            transition_clip = transition_clip.set_duration(transition_duration)
-
+            def make_frame(t):
+                progress = min(1.0, t / transition_duration)
+                offset = int(progress * clip1.w)
+                
+                frame1 = clip1.get_frame(t)
+                frame2 = clip2.get_frame(t)
+                
+                new_frame = np.zeros_like(frame1)
+                new_frame[:, :clip1.w-offset] = frame1[:, offset:]
+                new_frame[:, clip1.w-offset:] = frame2[:, :offset]
+                
+                return new_frame
+            
+            transition_clip = VideoClip(make_frame, duration=transition_duration)
+            transition_clip = transition_clip.set_fps(clip1.fps)
+            
+            # Аудио для slide перехода
+            if clip1.audio and clip2.audio:
+                transition_clip.audio = CompositeAudioClip([
+                    clip1.audio.subclip(-transition_duration, 0).fx(afx.audio_fadeout, transition_duration),
+                    clip2.audio.subclip(0, transition_duration).fx(afx.audio_fadein, transition_duration)
+                ])
+            elif clip1.audio:
+                transition_clip.audio = clip1.audio.subclip(-transition_duration, 0).fx(afx.audio_fadeout, transition_duration)
+            elif clip2.audio:
+                transition_clip.audio = clip2.audio.subclip(0, transition_duration).fx(afx.audio_fadein, transition_duration)
+                
             return transition_clip
+        # elif transition_type == 'slide':
+        #     # Функция для создания эффекта сдвига
+        #     def slide_effect(get_frame, t):
+        #         if t < transition_duration:
+        #             # Первый клип уезжает влево, второй приезжает справа
+        #             progress = t / transition_duration
+
+        #             # Получаем кадры из обоих клипов
+        #             frame1 = get_frame(t) if hasattr(clip1, 'get_frame') else clip1.get_frame(t)
+        #             frame2 = clip2.get_frame(t) if hasattr(clip2, 'get_frame') else clip2.get_frame(t)
+
+        #             # Вычисляем смещение в пикселях
+        #             offset = int(progress * frame1.shape[1])
+
+        #             # Создаем новый кадр
+        #             new_frame = np.zeros_like(frame1)
+
+        #             # Первый клип - левая часть (уезжает влево)
+        #             new_frame[:, :frame1.shape[1]-offset] = frame1[:, offset:]
+
+        #             # Второй клип - правая часть (приезжает справа)
+        #             new_frame[:, frame1.shape[1]-offset:] = frame2[:, :offset]
+
+        #             return new_frame
+        #         return get_frame(t)
+
+        #     # Создаем переходный клип
+        #     transition_clip = clip1.fl(slide_effect)
+        #     transition_clip = transition_clip.set_duration(transition_duration)
+
+        #     return transition_clip
 
         elif transition_type == 'zoom':
             # Размеры кадра
@@ -523,7 +556,7 @@ class MergeService:
             zoom_end = 1.0 if flag else 1.5
 
             # 3. Генерируем кадры с учетом длительности аудио
-            frames = self._generate_zoom_frames(img, audio_durations[i], (width, height), zoom_start, zoom_end, fps)
+            frames = self._generate_zoom_frames(img, audio_durations[i]+1.5, (width, height), zoom_start, zoom_end, fps)
 
             # 4. Создаем видеоклип
             def make_frame(t):

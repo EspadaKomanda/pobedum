@@ -121,10 +121,10 @@ class PromptService:
             if GEN_MODE == "plug":
 
                 response = [
-                    '[{"text": "Тестовый текст для видео", "photo_prompt": "photo description", "voice": "kirill"},'
-                    '{"text": "Тестируем текст", "photo_prompt": "photo description", "voice": "dasha"},'
-                    '{"text": "Больше текста, пожалуйста", "photo_prompt": "photo description", "voice": "dasha"},'
-                    '{"text": "Еще больше тестового текста", "photo_prompt": "photo description", "voice": "dasha"}]'
+                    '[{"text": "Тестовый текст для видео", "photo_prompt": "photo description", "voice": "kirill", "mood": "neutral"},'
+                    '{"text": "Тестируем текст", "photo_prompt": "photo description", "voice": "dasha", "mood": "friendly"},'
+                    '{"text": "Больше текста, пожалуйста", "photo_prompt": "photo description", "voice": "kirill", "mood": "strict"},'
+                    '{"text": "Еще больше тестового текста", "photo_prompt": "photo description", "voice": "dasha", "mood": "neutral"}]'
                 ][0]
 
             else:
@@ -316,6 +316,16 @@ class PromptService:
             # 
             # # Step 2: Generate and save prompts
             # self._generate_and_save_prompts(pipeline_guid, user_prompt)
+
+            self.producer.send_message(
+                "status_update_requests",
+                json.dumps({
+                    "TaskId": pipeline_guid,
+                    "Status": 2 # Creating images
+                }),
+                method="updateStatus"
+            )
+
             
             if not self.redis.exists(f"{pipeline_guid}:state"):
                 self.logger.error("No task with id %s", pipeline_guid)
@@ -326,14 +336,14 @@ class PromptService:
             self._request_start_photo(pipeline_guid, video_guid)
             
             # Notify pipeline of success
-            self.producer.send_message(
-                "status_update_requests",
-                json.dumps({
-                    "TaskId": pipeline_guid,
-                    "Status": 8 # Success
-                }),
-                method="updateStatus"
-            )
+            # self.producer.send_message(
+            #     "status_update_requests",
+            #     json.dumps({
+            #         "TaskId": pipeline_guid,
+            #         "Status": 8 # Success
+            #     }),
+            #     method="updateStatus"
+            # )
             
         except KeyError as e:
             self.logger.error("Invalid message format: missing %s", e)
