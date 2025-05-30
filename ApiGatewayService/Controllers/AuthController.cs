@@ -33,6 +33,7 @@ public class AuthController : ControllerBase
 
     #region Actions
 
+    /*
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] CreateUserRequest model)
     {
@@ -50,7 +51,7 @@ public class AuthController : ControllerBase
             });
         }
     }
-    
+    */
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest model)
     {
